@@ -7,6 +7,9 @@ let selectedIds = [];
 let idCounter = 0;
 let layoutSeed = 0;
 let regenTimer = null;
+let undoStack = [];
+let isApplyingUndo = false;
+const MAX_UNDO_STEPS = 60;
 
 const COLORS = ['#e94560','#533483','#0f3460','#e07c24','#2ecc71','#3498db','#9b59b6','#1abc9c','#e74c3c','#f39c12'];
 
@@ -30,6 +33,122 @@ function snapToGridValue(value) {
 
 function rectsOverlap(a, b) {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+function keepPhotoInCanvas(photo) {
+  const canvas = (typeof currentCanvas !== 'undefined' && currentCanvas)
+    ? currentCanvas
+    : { w: 10, h: 10 };
+  if (!photo) return;
+  photo.w = Math.min(photo.w, canvas.w);
+  photo.h = Math.min(photo.h, canvas.h);
+  photo.x = Math.max(0, Math.min(photo.x, canvas.w - photo.w));
+  photo.y = Math.max(0, Math.min(photo.y, canvas.h - photo.h));
+}
+
+function keepAllPhotosInCanvas(list) {
+  (list || []).forEach(keepPhotoInCanvas);
+}
+
+function captureUndoSnapshot() {
+  return {
+    unit,
+    photoEntries: photoEntries.map(e => ({ ...e })),
+    placedPhotos: placedPhotos.map(p => ({ ...p })),
+    selectedId,
+    selectedIds: Array.isArray(selectedIds) ? [...selectedIds] : [],
+    idCounter,
+    layoutSeed,
+    currentCanvas: (typeof currentCanvas !== 'undefined' && currentCanvas)
+      ? { w: currentCanvas.w, h: currentCanvas.h }
+      : { w: 10, h: 10 },
+    controls: {
+      prefRows: document.getElementById('prefRows').value,
+      prefCols: document.getElementById('prefCols').value,
+      spacing: document.getElementById('spacing').value,
+      layoutStyle: document.getElementById('layoutStyle').value,
+      artDirection: document.getElementById('artDirection').value,
+      gridSize: document.getElementById('gridSize').value,
+      snapToGrid: document.getElementById('snapToGrid').checked,
+      showGrid: document.getElementById('showGrid').checked,
+      photoW: document.getElementById('photoW').value,
+      photoH: document.getElementById('photoH').value,
+      photoQty: document.getElementById('photoQty').value,
+      exportName: document.getElementById('exportName').value,
+      exportFormat: document.getElementById('exportFormat').value,
+      exportOrientation: document.getElementById('exportOrientation').value,
+      exportLabels: document.getElementById('exportLabels').checked,
+      exportLegend: document.getElementById('exportLegend').checked,
+    }
+  };
+}
+
+function applyUndoSnapshot(snapshot) {
+  if (!snapshot) return;
+  isApplyingUndo = true;
+
+  unit = snapshot.unit || 'in';
+  photoEntries = (snapshot.photoEntries || []).map(e => ({ ...e }));
+  placedPhotos = (snapshot.placedPhotos || []).map(p => ({ ...p }));
+  selectedId = snapshot.selectedId || null;
+  selectedIds = Array.isArray(snapshot.selectedIds) ? [...snapshot.selectedIds] : [];
+  idCounter = snapshot.idCounter || 0;
+  layoutSeed = snapshot.layoutSeed || 0;
+
+  const c = snapshot.controls || {};
+  document.getElementById('prefRows').value = c.prefRows || '2';
+  document.getElementById('prefCols').value = c.prefCols || '3';
+  document.getElementById('spacing').value = c.spacing || '2';
+  document.getElementById('layoutStyle').value = c.layoutStyle || 'centered';
+  document.getElementById('artDirection').value = c.artDirection || 'balanced';
+  document.getElementById('gridSize').value = c.gridSize || '1';
+  document.getElementById('snapToGrid').checked = c.snapToGrid !== false;
+  document.getElementById('showGrid').checked = c.showGrid === true;
+  document.getElementById('photoW').value = c.photoW || document.getElementById('photoW').value;
+  document.getElementById('photoH').value = c.photoH || document.getElementById('photoH').value;
+  document.getElementById('photoQty').value = c.photoQty || document.getElementById('photoQty').value;
+  document.getElementById('exportName').value = c.exportName || 'collage-layout';
+  document.getElementById('exportFormat').value = c.exportFormat || 'auto';
+  document.getElementById('exportOrientation').value = c.exportOrientation || 'auto';
+  document.getElementById('exportLabels').checked = c.exportLabels !== false;
+  document.getElementById('exportLegend').checked = c.exportLegend !== false;
+
+  document.querySelectorAll('.unit-toggle button').forEach(b => b.classList.toggle('active', b.dataset.unit === unit));
+  document.querySelectorAll('.unit-label').forEach(el => el.textContent = unitSuffix());
+
+  if (snapshot.currentCanvas && Number.isFinite(snapshot.currentCanvas.w) && Number.isFinite(snapshot.currentCanvas.h)) {
+    currentCanvas = { w: snapshot.currentCanvas.w, h: snapshot.currentCanvas.h };
+  }
+  keepAllPhotosInCanvas(placedPhotos);
+  renderPhotoList();
+  if (placedPhotos.length > 0) {
+    renderCanvas(currentCanvas);
+  } else {
+    document.getElementById('canvasWrapper').style.display = 'none';
+    document.getElementById('emptyState').style.display = '';
+  }
+  saveState();
+  isApplyingUndo = false;
+}
+
+function pushUndoState() {
+  if (isApplyingUndo) return;
+  const snapshot = captureUndoSnapshot();
+  const fingerprint = JSON.stringify(snapshot);
+  if (undoStack.length > 0 && undoStack[undoStack.length - 1]._fingerprint === fingerprint) return;
+  snapshot._fingerprint = fingerprint;
+  undoStack.push(snapshot);
+  if (undoStack.length > MAX_UNDO_STEPS) undoStack.shift();
+}
+
+function undoLastAction() {
+  if (undoStack.length === 0) {
+    showToast('Nothing to undo');
+    return;
+  }
+  const snapshot = undoStack.pop();
+  applyUndoSnapshot(snapshot);
+  showToast('Undid last action');
 }
 
 function computeManualCanvas(spacing) {
@@ -154,6 +273,7 @@ function addPhoto() {
   const h = fromDisplay(parseFloat(document.getElementById('photoH').value));
   const qty = parseInt(document.getElementById('photoQty').value) || 1;
   if (!w || !h || w <= 0 || h <= 0) { showToast('Enter valid dimensions'); return; }
+  pushUndoState();
 
   const color = COLORS[photoEntries.length % COLORS.length];
   const entry = { id: ++idCounter, w, h, qty, color };
@@ -172,6 +292,7 @@ function addPhoto() {
 }
 
 function removeEntry(id) {
+  pushUndoState();
   photoEntries = photoEntries.filter(e => e.id !== id);
   renderPhotoList();
   saveState();
@@ -182,6 +303,7 @@ function removeEntry(id) {
 function rotateEntry(id) {
   const entry = photoEntries.find(e => e.id === id);
   if (!entry) return;
+  pushUndoState();
   const tmp = entry.w;
   entry.w = entry.h;
   entry.h = tmp;
@@ -201,6 +323,7 @@ function updateEntry(id, field, rawValue) {
       renderPhotoList();
       return;
     }
+    pushUndoState();
     entry.qty = qty;
   } else if (field === 'w' || field === 'h') {
     const displayVal = parseFloat(rawValue);
@@ -209,6 +332,7 @@ function updateEntry(id, field, rawValue) {
       renderPhotoList();
       return;
     }
+    pushUndoState();
     entry[field] = fromDisplay(displayVal);
   }
 
@@ -264,6 +388,7 @@ function renderPhotoList() {
 }
 
 function clearAll() {
+  pushUndoState();
   photoEntries = [];
   placedPhotos = [];
   selectedId = null;
@@ -280,6 +405,7 @@ function clearAll() {
 
 // ── Persistence (localStorage) ──
 function saveState() {
+  if (!isApplyingUndo) keepAllPhotosInCanvas(placedPhotos);
   const state = {
     unit,
     photoEntries,
@@ -341,10 +467,12 @@ function loadState() {
     if (state.currentCanvas && Number.isFinite(state.currentCanvas.w) && Number.isFinite(state.currentCanvas.h)) {
       currentCanvas = state.currentCanvas;
     }
+    keepAllPhotosInCanvas(placedPhotos);
 
     document.querySelectorAll('.unit-toggle button').forEach(b => b.classList.toggle('active', b.dataset.unit === unit));
     document.querySelectorAll('.unit-label').forEach(el => el.textContent = unitSuffix());
 
     renderPhotoList();
+    undoStack = [];
   } catch(e) {}
 }

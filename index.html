@@ -139,11 +139,12 @@
   <div class="actions">
     <button type="button" class="btn btn-primary" onclick="generateDesign()">🎲 Generate Design</button>
     <button type="button" class="btn btn-secondary" onclick="generateAnother()">🔄 Generate Another</button>
+    <button type="button" class="btn btn-secondary" onclick="undoLastAction()">↩ Undo</button>
     <button type="button" class="btn btn-secondary" onclick="exportPDF()">📄 Export to PDF</button>
     <button type="button" class="btn btn-danger btn-sm" onclick="clearAll()">Clear All</button>
   </div>
   <div class="layout-feedback info" id="layoutFeedback" role="status" aria-live="polite">No layout generated yet.</div>
-  <div class="keyboard-hint">R = rotate · Del = remove · Drag to move · Shift/Ctrl/Cmd+Click = multi-select · Drag empty canvas = box-select</div>
+  <div class="keyboard-hint">R = rotate · Del = remove · Drag to move · Shift/Ctrl/Cmd+Click = multi-select · Drag empty canvas = box-select · Cmd/Ctrl+Z = undo</div>
 </div>
 
 <div class="main" id="mainArea">

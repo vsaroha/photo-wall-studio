@@ -122,12 +122,14 @@ function orderPhotosForArt(photos, art, mode) {
 
 function generateDesign() {
   if (photoEntries.length === 0) { showToast('Add at least one photo size'); return; }
+  pushUndoState();
   layoutSeed = 0;
   runLayout();
 }
 
 function generateAnother() {
   if (photoEntries.length === 0) { showToast('Add at least one photo size'); return; }
+  pushUndoState();
   layoutSeed++;
   runLayout();
 }
@@ -170,6 +172,8 @@ function runLayout() {
   }
 
   const fitCanvas = shrinkCanvasToFit(tunedSpacing);
+  currentCanvas = fitCanvas;
+  keepAllPhotosInCanvas(placedPhotos);
   renderCanvas(fitCanvas);
   saveState();
 }

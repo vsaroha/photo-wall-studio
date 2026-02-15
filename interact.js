@@ -38,6 +38,7 @@ function autoSpaceSelected(axis) {
     showToast('Select at least 2 photos');
     return;
   }
+  pushUndoState();
 
   const sorted = [...photos].sort((a, b) => axis === 'y' ? a.y - b.y : a.x - b.x);
   const first = sorted[0];
@@ -59,7 +60,7 @@ function autoSpaceSelected(axis) {
     }
   });
 
-  shiftSelectionIntoCanvas(photos);
+  keepAllPhotosInCanvas(photos);
   renderCanvas();
   saveState();
 }
@@ -70,17 +71,24 @@ function centerSelected(axis) {
     showToast('Select one or more photos');
     return;
   }
+  pushUndoState();
 
   const b = getSelectionBounds(photos);
   if (!b) return;
-  const cx = (b.minX + b.maxX) / 2;
-  const cy = (b.minY + b.maxY) / 2;
-  let dx = 0, dy = 0;
-
-  if (axis === 'x' || axis === 'both') dx = currentCanvas.w / 2 - cx;
-  if (axis === 'y' || axis === 'both') dy = currentCanvas.h / 2 - cy;
-  photos.forEach(p => { p.x += dx; p.y += dy; });
-  shiftSelectionIntoCanvas(photos);
+  if (axis === 'x') {
+    const targetX = currentCanvas.w / 2;
+    photos.forEach((p) => { p.x = targetX - p.w / 2; });
+  } else if (axis === 'y') {
+    const targetY = currentCanvas.h / 2;
+    photos.forEach((p) => { p.y = targetY - p.h / 2; });
+  } else {
+    const cx = (b.minX + b.maxX) / 2;
+    const cy = (b.minY + b.maxY) / 2;
+    const dx = currentCanvas.w / 2 - cx;
+    const dy = currentCanvas.h / 2 - cy;
+    photos.forEach(p => { p.x += dx; p.y += dy; });
+  }
+  keepAllPhotosInCanvas(photos);
 
   renderCanvas();
   saveState();
@@ -112,6 +120,7 @@ function startDrag(e, id) {
   const rect = wrapper.getBoundingClientRect();
   const el = wrapper.querySelector(`.photo-rect[data-id="${id}"]`);
   el.classList.add('dragging');
+  pushUndoState();
 
   const offsetX = e.clientX - rect.left - photo.x * scale;
   const offsetY = e.clientY - rect.top - photo.y * scale;
@@ -148,13 +157,14 @@ function startDrag(e, id) {
 (function initResize() {
   let resizing = false, resizeId = null, startX, startY, startW, startH;
 
-  document.addEventListener('mousedown', (e) => {
+document.addEventListener('mousedown', (e) => {
     if (!e.target.classList.contains('resize-handle')) return;
     e.preventDefault();
     e.stopPropagation();
     resizeId = parseInt(e.target.dataset.id);
     const photo = placedPhotos.find(p => p.id === resizeId);
     if (!photo) return;
+    pushUndoState();
     resizing = true;
     startX = e.clientX; startY = e.clientY;
     startW = photo.w; startH = photo.h;
@@ -193,19 +203,28 @@ function rotatePhoto(id, e) {
   if (e) e.stopPropagation();
   const photo = placedPhotos.find(p => p.id === id);
   if (!photo) return;
+  pushUndoState();
   const tmp = photo.w;
   photo.w = photo.h;
   photo.h = tmp;
   photo.rotated = !photo.rotated;
+  keepPhotoInCanvas(photo);
   renderCanvas();
   saveState();
 }
 
 // ── Keyboard shortcuts ──
 document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
+    e.preventDefault();
+    undoLastAction();
+    return;
+  }
+
   const activeIds = getActiveSelectionIds();
   if (activeIds.length === 0) return;
   if (e.key === 'r' || e.key === 'R') {
+    pushUndoState();
     activeIds.forEach((id) => {
       const p = placedPhotos.find(photo => photo.id === id);
       if (!p) return;
@@ -213,10 +232,12 @@ document.addEventListener('keydown', (e) => {
       p.w = p.h;
       p.h = t;
       p.rotated = !p.rotated;
+      keepPhotoInCanvas(p);
     });
     renderCanvas();
     saveState();
   } else if (e.key === 'Delete' || e.key === 'Backspace') {
+    pushUndoState();
     const toRemove = new Set(activeIds);
     placedPhotos = placedPhotos.filter(p => !toRemove.has(p.id));
     selectedId = null;
