@@ -27,6 +27,99 @@ function getLayoutStyle() {
   return document.getElementById('layoutStyle').value;
 }
 
+function getArtDirection() {
+  const el = document.getElementById('artDirection');
+  return el ? el.value : 'balanced';
+}
+
+const ART_PRESETS = {
+  balanced: {
+    spacingScale: 1.0,
+    arrangement: 'balanced',
+    blockSlack: 0.32,
+    masonryGapScale: 1.0,
+    anchorBesideBias: 1.0,
+    tTopRatio: 0.55,
+    skylineWidthScale: 1.0,
+    cloudSpread: 1.0,
+    cloudJitter: 0.08,
+    cloudRingScale: 1.0,
+    cloudPaddingScale: 1.0,
+    binWidthScale: 1.0,
+    rectAspectBias: 1.0,
+    fillAllowRotate: true
+  },
+  gallery: {
+    spacingScale: 1.18,
+    arrangement: 'strict',
+    blockSlack: 0.14,
+    masonryGapScale: 1.15,
+    anchorBesideBias: 1.1,
+    tTopRatio: 0.62,
+    skylineWidthScale: 1.2,
+    cloudSpread: 1.15,
+    cloudJitter: 0.02,
+    cloudRingScale: 1.15,
+    cloudPaddingScale: 1.25,
+    binWidthScale: 1.18,
+    rectAspectBias: 1.2,
+    fillAllowRotate: false
+  },
+  salon: {
+    spacingScale: 0.72,
+    arrangement: 'eclectic',
+    blockSlack: 0.58,
+    masonryGapScale: 0.72,
+    anchorBesideBias: 0.82,
+    tTopRatio: 0.5,
+    skylineWidthScale: 0.84,
+    cloudSpread: 0.8,
+    cloudJitter: 0.24,
+    cloudRingScale: 0.82,
+    cloudPaddingScale: 0.75,
+    binWidthScale: 0.84,
+    rectAspectBias: 0.9,
+    fillAllowRotate: true
+  }
+};
+
+function getArtPreset() {
+  return ART_PRESETS[getArtDirection()] || ART_PRESETS.balanced;
+}
+
+function getTunedSpacing(spacing, art) {
+  if (spacing <= 0) return 0;
+  return Math.max(0.1, spacing * art.spacingScale);
+}
+
+function sortByAreaDesc(a, b) {
+  return (b.w * b.h) - (a.w * a.h) || b.h - a.h || b.w - a.w;
+}
+
+function sortByHeightDesc(a, b) {
+  return b.h - a.h || b.w - a.w || sortByAreaDesc(a, b);
+}
+
+function interleaveLargeSmall(list) {
+  const out = [];
+  let i = 0, j = list.length - 1;
+  while (i <= j) {
+    out.push(list[i]);
+    if (i !== j) out.push(list[j]);
+    i++;
+    j--;
+  }
+  return out;
+}
+
+function orderPhotosForArt(photos, art, mode) {
+  const base = [...photos];
+  base.sort(mode === 'height' ? sortByHeightDesc : sortByAreaDesc);
+  if (art.arrangement === 'strict') return base;
+  if (art.arrangement === 'eclectic') return interleaveLargeSmall(base);
+  return shuffleWithSeed(base, Math.max(1, layoutSeed));
+}
+
 function generateDesign() {
   if (photoEntries.length === 0) { showToast('Add at least one photo size'); return; }
   layoutSeed = 0;
@@ -52,23 +145,29 @@ function expandPhotos() {
 function runLayout() {
   const grid = getPrefGrid();
   const spacing = getSpacing();
+  const art = getArtPreset();
+  const tunedSpacing = getTunedSpacing(spacing, art);
   placedPhotos = [];
   selectedId = null;
 
-  let photos = expandPhotos();
-  photos = shuffleWithSeed(photos, layoutSeed);
+  const photos = expandPhotos();
 
   const style = getLayoutStyle();
   switch (style) {
-    case 'centered': layoutBlockGrid(photos, grid, spacing); break;
-    case 'masonry':  layoutMasonry(photos, grid, spacing); break;
-    case 'scattered': layoutAnchorSatellite(photos, grid, spacing); break;
-    case 'brick':    layoutTShape(photos, grid, spacing); break;
-    case 'spiral':   layoutSkyline(photos, grid, spacing); break;
-    default:         layoutBlockGrid(photos, grid, spacing);
+    case 'centered': layoutBlockGrid(photos, grid, tunedSpacing, art); break;
+    case 'masonry':  layoutMasonry(photos, grid, tunedSpacing, art); break;
+    case 'scattered': layoutAnchorSatellite(photos, grid, tunedSpacing, art); break;
+    case 'brick':    layoutTShape(photos, grid, tunedSpacing, art); break;
+    case 'spiral':   layoutSkyline(photos, grid, tunedSpacing, art); break;
+    case 'topAligned': layoutAlignedRows(photos, grid, tunedSpacing, 'top', art); break;
+    case 'bottomAligned': layoutAlignedRows(photos, grid, tunedSpacing, 'bottom', art); break;
+    case 'cloud': layoutCloudShape(photos, grid, tunedSpacing, art); break;
+    case 'binpack': layoutShelfBinPack(photos, grid, tunedSpacing, art); break;
+    case 'fillRect': layoutFillRectangle(photos, grid, tunedSpacing, art); break;
+    default:         layoutBlockGrid(photos, grid, tunedSpacing, art);
   }
 
-  const fitCanvas = shrinkCanvasToFit(spacing);
+  const fitCanvas = shrinkCanvasToFit(tunedSpacing);
   renderCanvas(fitCanvas);
   saveState();
 }
@@ -115,8 +214,8 @@ function distributeEvenly(items, k) {
 // ═══════════════════════════════════════════════════════════════
 // Pairs large photos with stacked smaller ones, then arranges
 // blocks into the preferred number of rows, centered.
-function layoutBlockGrid(photos, grid, spacing) {
-  const sorted = [...photos].sort((a, b) => (b.w * b.h) - (a.w * a.h));
+function layoutBlockGrid(photos, grid, spacing, art) {
+  const sorted = orderPhotosForArt(photos, art, 'area');
   const used = new Set();
   const blocks = [];
 
@@ -134,7 +233,7 @@ function layoutBlockGrid(photos, grid, spacing) {
       const s = sorted[j];
       if (s.h >= big.h) continue;
       const needed = stack.length > 0 ? s.h + spacing : s.h;
-      if (stackH + needed <= targetH + spacing * 0.3) {
+      if (stackH + needed <= targetH + spacing * art.blockSlack) {
         stack.push({ idx: j, photo: s });
         stackH += needed;
       }
@@ -161,10 +260,10 @@ function layoutBlockGrid(photos, grid, spacing) {
   }
 
   const rowGroups = distributeEvenly(blocks, grid.rows);
-  placeBlockRows(rowGroups, spacing);
+  placeBlockRows(rowGroups, spacing, art);
 }
 
-function placeBlockRows(rowGroups, spacing) {
+function placeBlockRows(rowGroups, spacing, art) {
   let curY = spacing;
   let maxRowW = 0;
   const rowMeta = [];
@@ -183,15 +282,18 @@ function placeBlockRows(rowGroups, spacing) {
     }
 
     maxRowW = Math.max(maxRowW, curX);
-    rowMeta.push({ totalW: curX, startIdx, count: placedPhotos.length - startIdx });
+    rowMeta.push({ totalW: curX, startIdx, count: placedPhotos.length - startIdx, rowIndex: rowMeta.length });
     curY += rowH + spacing;
   }
 
   for (const rm of rowMeta) {
     const dx = (maxRowW - rm.totalW) / 2;
+    const stagger = art.arrangement === 'eclectic'
+      ? (rm.rowIndex % 2 === 0 ? spacing * 0.2 : -spacing * 0.2)
+      : 0;
     if (Math.abs(dx) > 0.01) {
       for (let i = rm.startIdx; i < rm.startIdx + rm.count; i++) {
-        placedPhotos[i].x += dx;
+        placedPhotos[i].x += dx + stagger;
       }
     }
   }
@@ -202,17 +304,17 @@ function placeBlockRows(rowGroups, spacing) {
 // Strategy 2: MASONRY COLUMNS
 // ═══════════════════════════════════════════════════════════════
 // Uses preferred columns count. Photos fill the shortest column.
-function layoutMasonry(photos, grid, spacing) {
-  photos.sort((a, b) => (b.w * b.h) - (a.w * a.h));
-
+function layoutMasonry(photos, grid, spacing, art) {
+  const sorted = orderPhotosForArt(photos, art, 'area');
   const numCols = grid.cols;
-  const maxPhotoW = Math.max(...photos.map(p => p.w));
+  const maxPhotoW = Math.max(...sorted.map(p => p.w));
+  const colStep = maxPhotoW + spacing * art.masonryGapScale;
   const cols = [];
   for (let c = 0; c < numCols; c++) {
-    cols.push({ x: spacing + c * (maxPhotoW + spacing), h: spacing });
+    cols.push({ x: spacing + c * colStep, h: spacing });
   }
 
-  for (const p of photos) {
+  for (const p of sorted) {
     let minC = 0;
     for (let c = 1; c < numCols; c++) {
       if (cols[c].h < cols[minC].h) minC = c;
@@ -231,19 +333,25 @@ function layoutMasonry(photos, grid, spacing) {
 // Left: column to the left, top-aligned with anchor  
 // Bottom: row below, spanning full width (anchor + right col)
 // Top: row above, spanning full width (anchor + right col)
-function layoutAnchorSatellite(photos, grid, spacing) {
-  photos.sort((a, b) => (b.w * b.h) - (a.w * a.h));
+function layoutAnchorSatellite(photos, grid, spacing, art) {
+  const sorted = orderPhotosForArt(photos, art, 'area');
 
-  const anchor = photos[0];
-  const rest = photos.slice(1);
+  const anchor = sorted[0];
+  const rest = sorted.slice(1);
 
   // Anchor in center row, flanked by satellite photos. Extra rows below, centered.
-  const besideCount = Math.min(rest.length, Math.max(0, grid.cols - 1));
+  let besideCount = Math.min(rest.length, Math.max(0, Math.round((grid.cols - 1) * art.anchorBesideBias)));
+  if (art.arrangement === 'strict' && besideCount % 2 !== 0 && besideCount < rest.length) {
+    besideCount++;
+  }
   const beside = rest.slice(0, besideCount);
   const below = rest.slice(besideCount);
 
-  const leftBeside = beside.slice(0, Math.floor(beside.length / 2));
-  const rightBeside = beside.slice(Math.floor(beside.length / 2));
+  const splitAt = art.arrangement === 'eclectic'
+    ? Math.ceil(beside.length * 0.35)
+    : Math.floor(beside.length / 2);
+  const leftBeside = beside.slice(0, splitAt);
+  const rightBeside = beside.slice(splitAt);
 
   const rowH = Math.max(anchor.h, ...beside.map(p => p.h));
   let curX = 0;
@@ -297,18 +405,18 @@ function layoutAnchorSatellite(photos, grid, spacing) {
 // Strategy 4: T-SHAPE
 // ═══════════════════════════════════════════════════════════════
 // Top row wider, bottom row(s) narrower and centered.
-function layoutTShape(photos, grid, spacing) {
-  photos.sort((a, b) => (b.w * b.h) - (a.w * a.h));
+function layoutTShape(photos, grid, spacing, art) {
+  const sorted = orderPhotosForArt(photos, art, 'area');
 
-  if (photos.length <= 2) {
+  if (sorted.length <= 2) {
     let x = spacing;
-    for (const p of photos) { placePhoto(p, x, spacing); x += p.w + spacing; }
+    for (const p of sorted) { placePhoto(p, x, spacing); x += p.w + spacing; }
     return;
   }
 
-  const topCount = Math.max(2, Math.ceil(photos.length * 0.55));
-  const topPhotos = photos.slice(0, topCount);
-  const botPhotos = photos.slice(topCount);
+  const topCount = Math.max(2, Math.ceil(sorted.length * art.tTopRatio));
+  const topPhotos = sorted.slice(0, topCount);
+  const botPhotos = sorted.slice(topCount);
 
   const topRowH = Math.max(...topPhotos.map(p => p.h));
   let topX = spacing;
@@ -337,15 +445,15 @@ function layoutTShape(photos, grid, spacing) {
 // Strategy 5: SKYLINE PACK (tight bin-packing)
 // ═══════════════════════════════════════════════════════════════
 // Uses preferred columns to estimate width, then skyline algorithm.
-function layoutSkyline(photos, grid, spacing) {
-  photos.sort((a, b) => b.h - a.h || b.w - a.w);
+function layoutSkyline(photos, grid, spacing, art) {
+  const sorted = orderPhotosForArt(photos, art, 'height');
 
-  const maxPhotoW = Math.max(...photos.map(p => p.w));
-  const estW = grid.cols * maxPhotoW + (grid.cols + 1) * spacing;
+  const maxPhotoW = Math.max(...sorted.map(p => p.w));
+  const estW = (grid.cols * maxPhotoW + (grid.cols + 1) * spacing) * art.skylineWidthScale;
 
   let skyline = [{ x: spacing, y: spacing, w: estW }];
 
-  for (const p of photos) {
+  for (const p of sorted) {
     let bestY = Infinity, bestX = 0, bestFound = false;
 
     // Try each segment as a starting position
@@ -415,6 +523,248 @@ function updateSkyline(skyline, x, w, newY) {
 
   skyline.length = 0;
   skyline.push(...merged);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Strategy 6/7: TOP / BOTTOM ALIGNED ROWS
+// ═══════════════════════════════════════════════════════════════
+function layoutAlignedRows(photos, grid, spacing, mode, art) {
+  const rowCount = Math.max(1, grid.rows);
+  const ordered = orderPhotosForArt(photos, art, 'area');
+  const groups = distributeEvenly(ordered, rowCount);
+  const rows = groups.map((group) => ({
+    items: art.arrangement === 'strict'
+      ? [...group].sort((a, b) => b.h - a.h || b.w - a.w)
+      : group,
+    rowW: group.reduce((sum, p) => sum + p.w, 0) + spacing * Math.max(0, group.length - 1),
+    rowH: Math.max(...group.map((p) => p.h))
+  }));
+
+  const maxRowW = Math.max(...rows.map((r) => r.rowW));
+  let curY = spacing;
+  for (const row of rows) {
+    let x = spacing + (maxRowW - row.rowW) / 2;
+    for (const p of row.items) {
+      const y = mode === 'bottom' ? curY + (row.rowH - p.h) : curY;
+      placePhoto(p, x, y);
+      x += p.w + spacing;
+    }
+    curY += row.rowH + spacing;
+  }
+
+  normalizePositions(spacing);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Strategy 8: CLOUD SHAPE
+// ═══════════════════════════════════════════════════════════════
+function layoutCloudShape(photos, grid, spacing, art) {
+  const sorted = orderPhotosForArt(photos, art, 'area');
+  if (sorted.length === 0) return;
+
+  const anchor = sorted[0];
+  placePhoto(anchor, 0, 0);
+  if (sorted.length === 1) { normalizePositions(spacing); return; }
+
+  const avgW = sorted.reduce((sum, p) => sum + p.w, 0) / sorted.length;
+  const avgH = sorted.reduce((sum, p) => sum + p.h, 0) / sorted.length;
+  const ringBase = Math.max(5, Math.round(grid.cols * 2 * art.cloudRingScale));
+
+  for (let i = 1; i < sorted.length; i++) {
+    const p = sorted[i];
+    let ring = 1;
+    let slot = i - 1;
+    while (slot >= ring * ringBase) {
+      slot -= ring * ringBase;
+      ring++;
+    }
+
+    const slotsInRing = ring * ringBase;
+    const theta = (slot / slotsInRing) * Math.PI * 2 + ring * (0.2 + art.cloudJitter) + layoutSeed * (0.04 + art.cloudJitter * 0.15);
+    const rx = ring * (Math.max(anchor.w, avgW) * 0.62 + spacing * 1.8) * art.cloudSpread;
+    const ry = ring * (Math.max(anchor.h, avgH) * 0.52 + spacing * 1.6) * art.cloudSpread;
+    const targetX = Math.cos(theta) * rx - p.w / 2;
+    const targetY = Math.sin(theta) * ry - p.h / 2;
+
+    const spot = findNearbyOpenSpot(p, targetX, targetY, spacing, art);
+    placePhoto(p, spot.x, spot.y);
+  }
+
+  normalizePositions(spacing);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Strategy 9: SHELF BIN PACKING
+// ═══════════════════════════════════════════════════════════════
+function layoutShelfBinPack(photos, grid, spacing, art) {
+  const sorted = orderPhotosForArt(photos, art, 'height');
+  const targetW = estimateTargetWidth(sorted, grid, spacing, art) * art.binWidthScale;
+  const shelves = [];
+  let nextShelfY = spacing;
+
+  for (const p of sorted) {
+    let bestShelf = null;
+    let bestRemain = Infinity;
+    for (const shelf of shelves) {
+      if (p.h > shelf.h) continue;
+      if (shelf.x + p.w > targetW - spacing) continue;
+      const remain = (targetW - spacing) - (shelf.x + p.w);
+      if (remain < bestRemain) {
+        bestRemain = remain;
+        bestShelf = shelf;
+      }
+    }
+
+    if (!bestShelf) {
+      bestShelf = { y: nextShelfY, h: p.h, x: spacing };
+      shelves.push(bestShelf);
+      nextShelfY += p.h + spacing;
+    }
+
+    placePhoto(p, bestShelf.x, bestShelf.y);
+    bestShelf.x += p.w + spacing;
+  }
+
+  normalizePositions(spacing);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Strategy 10: FILL RECTANGLE
+// ═══════════════════════════════════════════════════════════════
+function layoutFillRectangle(photos, grid, spacing, art) {
+  const sorted = orderPhotosForArt(photos, art, 'area');
+  const innerW = Math.max(...sorted.map((p) => p.w), estimateTargetWidth(sorted, grid, spacing, art) - spacing * 2);
+  const maxPhotoH = Math.max(...sorted.map((p) => p.h));
+  const totalArea = sorted.reduce((sum, p) => sum + p.w * p.h, 0);
+  const innerH = Math.max(maxPhotoH, totalArea / Math.max(0.1, innerW));
+  let freeRects = [{ x: spacing, y: spacing, w: innerW, h: innerH }];
+
+  for (const p of sorted) {
+    let best = findBestFreeRect(freeRects, p, art.fillAllowRotate);
+
+    if (!best) {
+      const bottom = freeRects.reduce((m, r) => Math.max(m, r.y + r.h), spacing);
+      freeRects.push({
+        x: spacing,
+        y: bottom + spacing,
+        w: innerW,
+        h: Math.max(maxPhotoH, p.h)
+      });
+      best = findBestFreeRect(freeRects, p, art.fillAllowRotate);
+    }
+
+    if (!best) {
+      const fallbackY = placedPhotos.length > 0
+        ? Math.max(...placedPhotos.map((pp) => pp.y + pp.h)) + spacing
+        : spacing;
+      placePhoto(p, spacing, fallbackY);
+      continue;
+    }
+
+    const chosen = best.rotated
+      ? { entryId: p.entryId, w: p.h, h: p.w, color: p.color }
+      : p;
+    placePhoto(chosen, best.rect.x, best.rect.y);
+    splitFreeRect(freeRects, best.rectIndex, best.rect, chosen, spacing);
+    freeRects = pruneContainedRects(freeRects).filter((r) => r.w > 0.2 && r.h > 0.2);
+  }
+
+  normalizePositions(spacing);
+}
+
+function findBestFreeRect(freeRects, photo, allowRotate) {
+  let best = null;
+  for (let i = 0; i < freeRects.length; i++) {
+    const rect = freeRects[i];
+    const candidates = [{ rotated: false, w: photo.w, h: photo.h }];
+    if (allowRotate) candidates.push({ rotated: true, w: photo.h, h: photo.w });
+
+    for (const c of candidates) {
+      if (c.w > rect.w || c.h > rect.h) continue;
+      const waste = (rect.w - c.w) * (rect.h - c.h);
+      const shortSide = Math.min(rect.w - c.w, rect.h - c.h);
+      if (!best || waste < best.waste || (Math.abs(waste - best.waste) < 0.01 && shortSide < best.shortSide)) {
+        best = {
+          rectIndex: i,
+          rect,
+          rotated: c.rotated,
+          waste,
+          shortSide
+        };
+      }
+    }
+  }
+  return best;
+}
+
+function splitFreeRect(freeRects, rectIndex, rect, placed, spacing) {
+  freeRects.splice(rectIndex, 1);
+  const rightW = rect.w - placed.w - spacing;
+  const bottomH = rect.h - placed.h - spacing;
+
+  if (rightW > 0) {
+    freeRects.push({
+      x: rect.x + placed.w + spacing,
+      y: rect.y,
+      w: rightW,
+      h: rect.h
+    });
+  }
+  if (bottomH > 0) {
+    freeRects.push({
+      x: rect.x,
+      y: rect.y + placed.h + spacing,
+      w: placed.w,
+      h: bottomH
+    });
+  }
+}
+
+function pruneContainedRects(rects) {
+  return rects.filter((a, i) => !rects.some((b, j) => {
+    if (i === j) return false;
+    return a.x >= b.x && a.y >= b.y && a.x + a.w <= b.x + b.w && a.y + a.h <= b.y + b.h;
+  }));
+}
+
+// ── Packing helpers ──
+function estimateTargetWidth(photos, grid, spacing, art) {
+  const totalArea = photos.reduce((sum, p) => sum + p.w * p.h, 0);
+  const maxW = Math.max(...photos.map((p) => p.w));
+  const aspect = Math.max(0.55, Math.min(2.2, (grid.cols / Math.max(1, grid.rows)) * art.rectAspectBias));
+  return Math.max(maxW + spacing * 2, Math.sqrt(totalArea * aspect) + spacing * (grid.cols + 1));
+}
+
+function collidesAt(x, y, w, h, padding) {
+  for (const placed of placedPhotos) {
+    if (
+      x < placed.x + placed.w + padding &&
+      x + w + padding > placed.x &&
+      y < placed.y + placed.h + padding &&
+      y + h + padding > placed.y
+    ) return true;
+  }
+  return false;
+}
+
+function findNearbyOpenSpot(photo, targetX, targetY, spacing, art) {
+  const pad = spacing * 0.12 * art.cloudPaddingScale;
+  if (!collidesAt(targetX, targetY, photo.w, photo.h, pad)) {
+    return { x: targetX, y: targetY };
+  }
+
+  for (let i = 0; i < 220; i++) {
+    const ring = 1 + Math.floor(i / 14);
+    const angle = ((i % 14) / 14) * Math.PI * 2 + ring * (0.35 + art.cloudJitter * 0.6) + layoutSeed * 0.07;
+    const radius = ring * (spacing * 0.9 + Math.min(photo.w, photo.h) * 0.18) * art.cloudSpread;
+    const x = targetX + Math.cos(angle) * radius;
+    const y = targetY + Math.sin(angle) * radius;
+    if (!collidesAt(x, y, photo.w, photo.h, pad)) {
+      return { x, y };
+    }
+  }
+
+  return { x: targetX, y: targetY };
 }
 
 

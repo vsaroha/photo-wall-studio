@@ -206,6 +206,7 @@ function saveState() {
     prefCols: document.getElementById('prefCols').value,
     spacing: document.getElementById('spacing').value,
     layoutStyle: document.getElementById('layoutStyle').value,
+    artDirection: document.getElementById('artDirection').value,
     photoW: document.getElementById('photoW').value,
     photoH: document.getElementById('photoH').value,
     photoQty: document.getElementById('photoQty').value,
@@ -233,6 +234,7 @@ function loadState() {
     document.getElementById('prefCols').value = state.prefCols || '3';
     document.getElementById('spacing').value = state.spacing || '2';
     document.getElementById('layoutStyle').value = state.layoutStyle || 'centered';
+    document.getElementById('artDirection').value = state.artDirection || 'balanced';
     if (state.photoW) document.getElementById('photoW').value = state.photoW;
     if (state.photoH) document.getElementById('photoH').value = state.photoH;
     if (state.photoQty) document.getElementById('photoQty').value = state.photoQty;

@@ -144,6 +144,7 @@ window.addEventListener('resize', () => { if (placedPhotos.length) renderCanvas(
   document.getElementById(id).addEventListener('change', () => { saveState(); autoRegenerate(); });
 });
 document.getElementById('layoutStyle').addEventListener('change', () => { saveState(); autoRegenerate(); });
+document.getElementById('artDirection').addEventListener('change', () => { saveState(); autoRegenerate(); });
 ['exportName', 'exportFormat', 'exportOrientation', 'exportLabels', 'exportLegend'].forEach(id => {
   document.getElementById(id).addEventListener('change', saveState);
 });
