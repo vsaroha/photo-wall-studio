@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Collage Layout Planner</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="sidebar">
+  <h1>📐 Collage Planner</h1>
+
+  <!-- Units -->
+  <div class="section">
+    <h3>Units</h3>
+    <div class="unit-toggle">
+      <button class="active" data-unit="in" onclick="setUnit('in')">Inches</button>
+      <button data-unit="cm" onclick="setUnit('cm')">Centimeters</button>
+    </div>
+  </div>
+
+  <!-- Layout Settings -->
+  <div class="section">
+    <h3>Layout Settings</h3>
+    <div class="row" style="margin-bottom:8px">
+      <div><label>Preferred Rows</label><input type="number" id="prefRows" step="1" min="1" value="2" oninput="saveState()"></div>
+      <div><label>Preferred Columns</label><input type="number" id="prefCols" step="1" min="1" value="3" oninput="saveState()"></div>
+    </div>
+    <div>
+      <label>Spacing (<span class="unit-label">in</span>)</label>
+      <input type="number" id="spacing" step="0.1" min="0" value="2" oninput="saveState()">
+    </div>
+    <div style="margin-top:8px">
+      <label>Layout Style</label>
+      <select id="layoutStyle">
+        <option value="centered">Block Grid</option>
+        <option value="masonry">Masonry Columns</option>
+        <option value="scattered">Anchor + Satellite</option>
+        <option value="brick">T-Shape</option>
+        <option value="spiral">Skyline Pack</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Photo Sizes -->
+  <div class="section">
+    <h3>Photo Sizes</h3>
+    <div class="preset-chips">
+      <button type="button" class="preset-chip" onclick="addPresetCm(9,13)">9×13</button>
+      <button type="button" class="preset-chip" onclick="addPresetCm(10,15)">10×15</button>
+      <button type="button" class="preset-chip" onclick="addPresetCm(13,18)">13×18</button>
+      <button type="button" class="preset-chip" onclick="addPresetCm(15,20)">15×20</button>
+      <button type="button" class="preset-chip" onclick="addPresetCm(20,25)">20×25</button>
+      <button type="button" class="preset-chip" onclick="addPresetCm(20,30)">20×30</button>
+      <button type="button" class="preset-chip" onclick="addPresetCm(30,40)">30×40</button>
+    </div>
+    <div class="row">
+      <div><label>W (<span class="unit-label">in</span>)</label><input type="number" id="photoW" step="0.1" min="0.5" value="4" oninput="saveState()"></div>
+      <div><label>H (<span class="unit-label">in</span>)</label><input type="number" id="photoH" step="0.1" min="0.5" value="6" oninput="saveState()"></div>
+      <div><label>Qty</label><input type="number" id="photoQty" min="1" value="1" oninput="saveState()"></div>
+      <div style="flex:0"><button type="button" class="btn btn-secondary btn-sm" onclick="swapPhotoInputs()" title="Swap W↔H" aria-label="Swap width and height" style="margin-bottom:1px">↻</button></div>
+      <div style="flex:0"><button type="button" class="btn btn-primary btn-sm" onclick="addPhoto()" aria-label="Add photo size entry" style="margin-bottom:1px">＋</button></div>
+    </div>
+    <div class="photo-list" id="photoList"></div>
+  </div>
+
+  <!-- Export Settings -->
+  <div class="section">
+    <h3>Export Settings</h3>
+    <div>
+      <label>File Name</label>
+      <input type="text" id="exportName" value="collage-layout" maxlength="80" oninput="saveState()">
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div>
+        <label>Paper</label>
+        <select id="exportFormat">
+          <option value="auto">Auto (Canvas Size)</option>
+          <option value="letter">Letter</option>
+          <option value="a4">A4</option>
+        </select>
+      </div>
+      <div>
+        <label>Orientation</label>
+        <select id="exportOrientation">
+          <option value="auto">Auto</option>
+          <option value="portrait">Portrait</option>
+          <option value="landscape">Landscape</option>
+        </select>
+      </div>
+    </div>
+    <div class="row export-checks" style="margin-top:8px">
+      <label><input type="checkbox" id="exportLabels" checked> Include labels</label>
+      <label><input type="checkbox" id="exportLegend" checked> Include footer</label>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="actions">
+    <button type="button" class="btn btn-primary" onclick="generateDesign()">🎲 Generate Design</button>
+    <button type="button" class="btn btn-secondary" onclick="generateAnother()">🔄 Generate Another</button>
+    <button type="button" class="btn btn-secondary" onclick="exportPDF()">📄 Export to PDF</button>
+    <button type="button" class="btn btn-danger btn-sm" onclick="clearAll()">Clear All</button>
+  </div>
+  <div class="layout-feedback info" id="layoutFeedback" role="status" aria-live="polite">No layout generated yet.</div>
+  <div class="keyboard-hint">R = rotate · Del = remove · Drag to move</div>
+</div>
+
+<div class="main" id="mainArea">
+  <div class="empty-state" id="emptyState">
+    <div style="font-size:3rem">📷</div>
+    <p>Add photo sizes and click <b>Generate Design</b></p>
+  </div>
+  <div class="canvas-wrapper" id="canvasWrapper" style="display:none">
+    <button type="button" class="shuffle-btn" onclick="generateAnother()" title="Shuffle layout" aria-label="Shuffle layout">🔀</button>
+    <div class="dim-label top" id="dimTop"></div>
+    <div class="dim-label left" id="dimLeft"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="state.js"></script>
+<script src="layout.js"></script>
+<script src="render.js"></script>
+<script src="interact.js"></script>
+<script src="export.js"></script>
+</body>
+</html>
