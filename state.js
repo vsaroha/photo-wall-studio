@@ -278,17 +278,12 @@ function addPhoto() {
   const color = COLORS[photoEntries.length % COLORS.length];
   const entry = { id: ++idCounter, w, h, qty, color };
   photoEntries.push(entry);
+  appendEntryToManualLayout(entry);
+  const newIds = placedPhotos.slice(-qty).map(p => p.id);
+  if (typeof setSelectedIds === 'function') setSelectedIds(newIds);
   renderPhotoList();
-
-  if (isManualLayoutMode() && placedPhotos.length > 0) {
-    appendEntryToManualLayout(entry);
-    renderCanvas(currentCanvas);
-    saveState();
-    return;
-  }
-
+  renderCanvas(currentCanvas);
   saveState();
-  autoRegenerate();
 }
 
 function removeEntry(id) {
@@ -342,6 +337,7 @@ function updateEntry(id, field, rawValue) {
 
 function renderPhotoList() {
   const list = document.getElementById('photoList');
+  if (!list) return;
   list.innerHTML = photoEntries.map(e => {
     return `
     <div class="photo-item">

@@ -213,6 +213,58 @@ function rotatePhoto(id, e) {
   saveState();
 }
 
+function removePhotosByIds(ids) {
+  const toRemove = new Set((ids || []).filter(Number.isFinite));
+  if (toRemove.size === 0) return;
+
+  const removed = placedPhotos.filter((p) => toRemove.has(p.id));
+  if (removed.length === 0) return;
+
+  const removedByEntry = new Map();
+  removed.forEach((p) => {
+    if (!Number.isFinite(p.entryId)) return;
+    removedByEntry.set(p.entryId, (removedByEntry.get(p.entryId) || 0) + 1);
+  });
+
+  placedPhotos = placedPhotos.filter((p) => !toRemove.has(p.id));
+  if (removedByEntry.size > 0) {
+    photoEntries = photoEntries
+      .map((entry) => {
+        const dec = removedByEntry.get(entry.id) || 0;
+        if (!dec) return entry;
+        const nextQty = entry.qty - dec;
+        return nextQty > 0 ? { ...entry, qty: nextQty } : null;
+      })
+      .filter(Boolean);
+  }
+
+  selectedIds = selectedIds.filter((id) => !toRemove.has(id));
+  selectedId = selectedIds.length > 0 ? selectedIds[selectedIds.length - 1] : null;
+  renderPhotoList();
+}
+
+function refreshCanvasAfterRemoval() {
+  if (placedPhotos.length > 0) {
+    renderCanvas();
+    return;
+  }
+  const wrapper = document.getElementById('canvasWrapper');
+  const empty = document.getElementById('emptyState');
+  if (wrapper) wrapper.style.display = 'none';
+  if (empty) empty.style.display = '';
+  if (typeof setLayoutFeedback === 'function') {
+    setLayoutFeedback('No layout generated yet.', 'info');
+  }
+}
+
+function deletePhoto(id, e) {
+  if (e) e.stopPropagation();
+  pushUndoState();
+  removePhotosByIds([id]);
+  refreshCanvasAfterRemoval();
+  saveState();
+}
+
 // ── Keyboard shortcuts ──
 document.addEventListener('keydown', (e) => {
   if ((e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
@@ -238,11 +290,8 @@ document.addEventListener('keydown', (e) => {
     saveState();
   } else if (e.key === 'Delete' || e.key === 'Backspace') {
     pushUndoState();
-    const toRemove = new Set(activeIds);
-    placedPhotos = placedPhotos.filter(p => !toRemove.has(p.id));
-    selectedId = null;
-    selectedIds = [];
-    renderCanvas();
+    removePhotosByIds(activeIds);
+    refreshCanvasAfterRemoval();
     saveState();
   }
 });

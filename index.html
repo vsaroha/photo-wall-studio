@@ -85,9 +85,8 @@
       <div><label>H (<span class="unit-label">in</span>)</label><input type="number" id="photoH" step="0.1" min="0.5" value="6" oninput="saveState()"></div>
       <div><label>Qty</label><input type="number" id="photoQty" min="1" value="1" oninput="saveState()"></div>
       <div style="flex:0"><button type="button" class="btn btn-secondary btn-sm" onclick="swapPhotoInputs()" title="Swap W↔H" aria-label="Swap width and height" style="margin-bottom:1px">↻</button></div>
-      <div style="flex:0"><button type="button" class="btn btn-primary btn-sm" onclick="addPhoto()" aria-label="Add photo size entry" style="margin-bottom:1px">＋</button></div>
+      <div style="flex:0"><button type="button" class="btn btn-primary btn-sm" onclick="addPhoto()" aria-label="Add photo boxes to canvas" style="margin-bottom:1px">＋</button></div>
     </div>
-    <div class="photo-list" id="photoList"></div>
   </div>
 </div>
 
@@ -110,35 +109,37 @@
     </div>
 
     <div class="canvas-secondary">
-      <div class="section export-section">
-        <h3>Export Settings</h3>
-        <div>
-          <label>File Name</label>
-          <input type="text" id="exportName" value="collage-layout" maxlength="80" oninput="saveState()">
-        </div>
-        <div class="row" style="margin-top:8px">
+      <details class="section export-section" id="exportSettings">
+        <summary>Export Settings</summary>
+        <div class="export-body">
           <div>
-            <label>Paper</label>
-            <select id="exportFormat">
-              <option value="auto">Auto (Canvas Size)</option>
-              <option value="letter">Letter</option>
-              <option value="a4">A4</option>
-            </select>
+            <label>File Name</label>
+            <input type="text" id="exportName" value="collage-layout" maxlength="80" oninput="saveState()">
           </div>
-          <div>
-            <label>Orientation</label>
-            <select id="exportOrientation">
-              <option value="auto">Auto</option>
-              <option value="portrait">Portrait</option>
-              <option value="landscape">Landscape</option>
-            </select>
+          <div class="row" style="margin-top:8px">
+            <div>
+              <label>Paper</label>
+              <select id="exportFormat">
+                <option value="auto">Auto (Canvas Size)</option>
+                <option value="letter">Letter</option>
+                <option value="a4">A4</option>
+              </select>
+            </div>
+            <div>
+              <label>Orientation</label>
+              <select id="exportOrientation">
+                <option value="auto">Auto</option>
+                <option value="portrait">Portrait</option>
+                <option value="landscape">Landscape</option>
+              </select>
+            </div>
+          </div>
+          <div class="row export-checks" style="margin-top:8px">
+            <label><input type="checkbox" id="exportLabels" checked> Include labels</label>
+            <label><input type="checkbox" id="exportLegend" checked> Include footer</label>
           </div>
         </div>
-        <div class="row export-checks" style="margin-top:8px">
-          <label><input type="checkbox" id="exportLabels" checked> Include labels</label>
-          <label><input type="checkbox" id="exportLegend" checked> Include footer</label>
-        </div>
-      </div>
+      </details>
 
       <div class="section project-section">
         <div class="project-actions">

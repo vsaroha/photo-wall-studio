@@ -195,6 +195,12 @@ document.getElementById('showGrid').addEventListener('change', () => {
 ['exportName', 'exportFormat', 'exportOrientation', 'exportLabels', 'exportLegend'].forEach(id => {
   document.getElementById(id).addEventListener('change', saveState);
 });
+const exportSettings = document.getElementById('exportSettings');
+if (exportSettings) {
+  exportSettings.addEventListener('toggle', () => {
+    if (placedPhotos.length > 0) renderCanvas();
+  });
+}
 
 // ── Init ──
 loadState();

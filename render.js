@@ -46,6 +46,7 @@ function renderCanvas(canvasDims) {
     el.innerHTML = `
       <span>${toDisplay(p.w)}×${toDisplay(p.h)}</span>
       <span class="dim-text">${unitSuffix()}</span>
+      <button class="delete-btn" onclick="deletePhoto(${p.id}, event)" title="Delete">✕</button>
       <button class="rotate-btn" onclick="rotatePhoto(${p.id}, event)" title="Rotate">↻</button>
       <div class="resize-handle" data-id="${p.id}"></div>
     `;
@@ -53,6 +54,7 @@ function renderCanvas(canvasDims) {
     el.addEventListener('mousedown', (e) => {
       if (e.target.classList.contains('resize-handle')) return;
       if (e.target.classList.contains('rotate-btn')) return;
+      if (e.target.classList.contains('delete-btn')) return;
       const multi = e.shiftKey || e.ctrlKey || e.metaKey;
       selectPhoto(p.id, { additive: multi, toggle: multi });
       if (multi) return;
