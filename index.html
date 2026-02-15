@@ -89,73 +89,76 @@
     </div>
     <div class="photo-list" id="photoList"></div>
   </div>
-
-  <!-- Arrange Selection -->
-  <div class="section">
-    <h3>Arrange Selection</h3>
-    <div class="row">
-      <div><button type="button" class="btn btn-secondary btn-sm" onclick="autoSpaceSelected('x')">Auto-Space X</button></div>
-      <div><button type="button" class="btn btn-secondary btn-sm" onclick="autoSpaceSelected('y')">Auto-Space Y</button></div>
-    </div>
-    <div class="row" style="margin-top:8px">
-      <div><button type="button" class="btn btn-secondary btn-sm" onclick="centerSelected('x')">Center X</button></div>
-      <div><button type="button" class="btn btn-secondary btn-sm" onclick="centerSelected('y')">Center Y</button></div>
-      <div><button type="button" class="btn btn-secondary btn-sm" onclick="centerSelected('both')">Center Both</button></div>
-    </div>
-  </div>
-
-  <!-- Export Settings -->
-  <div class="section">
-    <h3>Export Settings</h3>
-    <div>
-      <label>File Name</label>
-      <input type="text" id="exportName" value="collage-layout" maxlength="80" oninput="saveState()">
-    </div>
-    <div class="row" style="margin-top:8px">
-      <div>
-        <label>Paper</label>
-        <select id="exportFormat">
-          <option value="auto">Auto (Canvas Size)</option>
-          <option value="letter">Letter</option>
-          <option value="a4">A4</option>
-        </select>
-      </div>
-      <div>
-        <label>Orientation</label>
-        <select id="exportOrientation">
-          <option value="auto">Auto</option>
-          <option value="portrait">Portrait</option>
-          <option value="landscape">Landscape</option>
-        </select>
-      </div>
-    </div>
-    <div class="row export-checks" style="margin-top:8px">
-      <label><input type="checkbox" id="exportLabels" checked> Include labels</label>
-      <label><input type="checkbox" id="exportLegend" checked> Include footer</label>
-    </div>
-  </div>
-
-  <!-- Actions -->
-  <div class="actions">
-    <button type="button" class="btn btn-primary" onclick="generateDesign()">🎲 Generate Design</button>
-    <button type="button" class="btn btn-secondary" onclick="generateAnother()">🔄 Generate Another</button>
-    <button type="button" class="btn btn-secondary" onclick="undoLastAction()">↩ Undo</button>
-    <button type="button" class="btn btn-secondary" onclick="exportPDF()">📄 Export to PDF</button>
-    <button type="button" class="btn btn-danger btn-sm" onclick="clearAll()">Clear All</button>
-  </div>
-  <div class="layout-feedback info" id="layoutFeedback" role="status" aria-live="polite">No layout generated yet.</div>
-  <div class="keyboard-hint">R = rotate · Del = remove · Drag to move · Shift/Ctrl/Cmd+Click = multi-select · Drag empty canvas = box-select · Cmd/Ctrl+Z = undo</div>
 </div>
 
 <div class="main" id="mainArea">
-  <div class="empty-state" id="emptyState">
-    <div style="font-size:3rem">📷</div>
-    <p>Add photo sizes and click <b>Generate Design</b></p>
+  <div class="top-controls" id="topControls">
+    <div class="canvas-toolbar" id="canvasToolbar" role="toolbar" aria-label="Canvas controls">
+      <div class="toolbar-group">
+        <button type="button" class="btn btn-primary btn-sm" onclick="generateDesign()">Generate Design</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="generateAnother()">Shuffle</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="undoLastAction()">Undo</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="exportPDF()">Export PDF</button>
+      </div>
+      <div class="toolbar-group">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="autoSpaceSelected('x')">Auto-Space X</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="autoSpaceSelected('y')">Auto-Space Y</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="centerSelected('x')">Center X</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="centerSelected('y')">Center Y</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="centerSelected('both')">Center Both</button>
+      </div>
+    </div>
+
+    <div class="canvas-secondary">
+      <div class="section export-section">
+        <h3>Export Settings</h3>
+        <div>
+          <label>File Name</label>
+          <input type="text" id="exportName" value="collage-layout" maxlength="80" oninput="saveState()">
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div>
+            <label>Paper</label>
+            <select id="exportFormat">
+              <option value="auto">Auto (Canvas Size)</option>
+              <option value="letter">Letter</option>
+              <option value="a4">A4</option>
+            </select>
+          </div>
+          <div>
+            <label>Orientation</label>
+            <select id="exportOrientation">
+              <option value="auto">Auto</option>
+              <option value="portrait">Portrait</option>
+              <option value="landscape">Landscape</option>
+            </select>
+          </div>
+        </div>
+        <div class="row export-checks" style="margin-top:8px">
+          <label><input type="checkbox" id="exportLabels" checked> Include labels</label>
+          <label><input type="checkbox" id="exportLegend" checked> Include footer</label>
+        </div>
+      </div>
+
+      <div class="section project-section">
+        <div class="project-actions">
+          <button type="button" class="btn btn-danger btn-sm" onclick="clearAll()">Clear All</button>
+        </div>
+        <div class="layout-feedback info" id="layoutFeedback" role="status" aria-live="polite">No layout generated yet.</div>
+        <div class="keyboard-hint">R = rotate · Del = remove · Drag to move · Shift/Ctrl/Cmd+Click = multi-select · Drag empty canvas = box-select · Cmd/Ctrl+Z = undo</div>
+      </div>
+    </div>
   </div>
-  <div class="canvas-wrapper" id="canvasWrapper" style="display:none">
-    <button type="button" class="shuffle-btn" onclick="generateAnother()" title="Shuffle layout" aria-label="Shuffle layout">🔀</button>
-    <div class="dim-label top" id="dimTop"></div>
-    <div class="dim-label left" id="dimLeft"></div>
+
+  <div class="canvas-stage">
+    <div class="empty-state" id="emptyState">
+      <div style="font-size:3rem">📷</div>
+      <p>Add photo sizes and click <b>Generate Design</b></p>
+    </div>
+    <div class="canvas-wrapper" id="canvasWrapper" style="display:none">
+      <div class="dim-label top" id="dimTop"></div>
+      <div class="dim-label left" id="dimLeft"></div>
+    </div>
   </div>
 </div>
 

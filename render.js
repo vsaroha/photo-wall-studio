@@ -4,8 +4,10 @@ let currentCanvas = { w: 10, h: 10 };
 
 function getScale() {
   const mainArea = document.getElementById('mainArea');
-  const maxW = mainArea.clientWidth - 100;
-  const maxH = mainArea.clientHeight - 80;
+  const topControls = document.getElementById('topControls');
+  const controlsH = topControls ? topControls.offsetHeight : 0;
+  const maxW = Math.max(80, mainArea.clientWidth - 100);
+  const maxH = Math.max(80, mainArea.clientHeight - controlsH - 100);
   return Math.min(maxW / currentCanvas.w, maxH / currentCanvas.h, 96);
 }
 
