@@ -33,13 +33,15 @@ function rectsOverlap(a, b) {
 }
 
 function computeManualCanvas(spacing) {
+  const baseW = (typeof currentCanvas !== 'undefined' && Number.isFinite(currentCanvas.w)) ? currentCanvas.w : 10;
+  const baseH = (typeof currentCanvas !== 'undefined' && Number.isFinite(currentCanvas.h)) ? currentCanvas.h : 10;
   if (placedPhotos.length === 0) return { w: 10, h: 10 };
   let maxX = 0, maxY = 0;
   for (const p of placedPhotos) {
     maxX = Math.max(maxX, p.x + p.w);
     maxY = Math.max(maxY, p.y + p.h);
   }
-  return { w: Math.max(10, maxX + spacing), h: Math.max(10, maxY + spacing) };
+  return { w: Math.max(10, baseW, maxX + spacing), h: Math.max(10, baseH, maxY + spacing) };
 }
 
 function findManualPlacement(w, h, spacing) {

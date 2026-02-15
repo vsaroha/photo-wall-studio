@@ -144,6 +144,30 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .photo-rect:hover .resize-handle, .photo-rect.selected .resize-handle { background: var(--accent); }
 .overlap-warning { border-color: #e74c3c !important; }
 .out-of-bounds-warning { border-color: #f39c12 !important; }
+.gap-guide {
+  position: absolute;
+  pointer-events: none;
+  z-index: 180;
+}
+.gap-guide.x {
+  border-top: 1px dashed rgba(15, 52, 96, 0.65);
+}
+.gap-guide.y {
+  border-left: 1px dashed rgba(15, 52, 96, 0.65);
+}
+.gap-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(15, 52, 96, 0.3);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 10px;
+  color: #23395d;
+  pointer-events: none;
+  z-index: 181;
+  white-space: nowrap;
+}
 .marquee-box {
   position: absolute;
   border: 1px dashed rgba(233, 69, 96, 0.9);

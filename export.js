@@ -55,6 +55,39 @@ function buildSizeSummary() {
     .join(', ');
 }
 
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function drawGapAnnotationsPDF(doc, gapAnnotations, scale, offsetX, offsetY, pageW, pageH) {
+  if (!gapAnnotations || gapAnnotations.length === 0) return;
+
+  doc.setDrawColor(70);
+  doc.setTextColor(50);
+  doc.setFontSize(Math.max(5, Math.min(7.2, 5.8 * scale + 0.5)));
+  if (typeof doc.setLineDashPattern === 'function') {
+    doc.setLineDashPattern([0.03, 0.02], 0);
+  }
+
+  gapAnnotations.forEach((gap) => {
+    const x1 = offsetX + gap.x1 * scale;
+    const y1 = offsetY + gap.y1 * scale;
+    const x2 = offsetX + gap.x2 * scale;
+    const y2 = offsetY + gap.y2 * scale;
+    doc.setLineWidth(Math.max(0.004, 0.006 * scale));
+    doc.line(x1, y1, x2, y2);
+
+    const label = `${toDisplay(gap.gap)} ${unitSuffix()}`;
+    const lx = clamp(offsetX + gap.labelX * scale, 0.12, pageW - 0.12);
+    const ly = clamp(offsetY + gap.labelY * scale, 0.12, pageH - 0.18);
+    doc.text(label, lx, ly, { align: 'center' });
+  });
+
+  if (typeof doc.setLineDashPattern === 'function') {
+    doc.setLineDashPattern([], 0);
+  }
+}
+
 // ── PDF Export ──
 function exportPDF() {
   if (placedPhotos.length === 0) { showToast('Generate a design first'); return; }
@@ -108,6 +141,11 @@ function exportPDF() {
       }
     }
   });
+
+  const gapAnnotations = (typeof computeGapAnnotations === 'function')
+    ? computeGapAnnotations(placedPhotos, canvas)
+    : [];
+  drawGapAnnotationsPDF(doc, gapAnnotations, scale, offsetX, offsetY, pageW, pageH);
 
   if (options.includeLegend) {
     doc.setFontSize(6.5);

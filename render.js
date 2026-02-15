@@ -60,6 +60,7 @@ function renderCanvas(canvasDims) {
     wrapper.appendChild(el);
   });
 
+  renderGapAnnotations(scale, wrapper);
   checkOverlaps();
 }
 
@@ -94,6 +95,130 @@ function updateSelectionClasses() {
   document.querySelectorAll('.photo-rect').forEach(el => {
     const pid = parseInt(el.dataset.id, 10);
     el.classList.toggle('selected', selectedIds.includes(pid));
+  });
+}
+
+function computeGapAnnotations(photos, canvas) {
+  if (!photos || photos.length < 2) return [];
+  const annotations = [];
+  const minOverlap = 0.08;
+  const maxGap = Math.max(0.15, Math.min(canvas.w, canvas.h) * 0.45);
+
+  for (let i = 0; i < photos.length; i++) {
+    for (let j = i + 1; j < photos.length; j++) {
+      const a = photos[i];
+      const b = photos[j];
+
+      const overlapY = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+      if (overlapY > minOverlap) {
+        if (a.x + a.w <= b.x) {
+          const gap = b.x - (a.x + a.w);
+          if (gap > 0 && gap <= maxGap) {
+            const y = Math.max(a.y, b.y) + overlapY / 2;
+            annotations.push({
+              axis: 'x',
+              gap,
+              x1: a.x + a.w,
+              y1: y,
+              x2: b.x,
+              y2: y,
+              labelX: (a.x + a.w + b.x) / 2,
+              labelY: y - 0.08
+            });
+          }
+        } else if (b.x + b.w <= a.x) {
+          const gap = a.x - (b.x + b.w);
+          if (gap > 0 && gap <= maxGap) {
+            const y = Math.max(a.y, b.y) + overlapY / 2;
+            annotations.push({
+              axis: 'x',
+              gap,
+              x1: b.x + b.w,
+              y1: y,
+              x2: a.x,
+              y2: y,
+              labelX: (b.x + b.w + a.x) / 2,
+              labelY: y - 0.08
+            });
+          }
+        }
+      }
+
+      const overlapX = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+      if (overlapX > minOverlap) {
+        if (a.y + a.h <= b.y) {
+          const gap = b.y - (a.y + a.h);
+          if (gap > 0 && gap <= maxGap) {
+            const x = Math.max(a.x, b.x) + overlapX / 2;
+            annotations.push({
+              axis: 'y',
+              gap,
+              x1: x,
+              y1: a.y + a.h,
+              x2: x,
+              y2: b.y,
+              labelX: x + 0.08,
+              labelY: (a.y + a.h + b.y) / 2
+            });
+          }
+        } else if (b.y + b.h <= a.y) {
+          const gap = a.y - (b.y + b.h);
+          if (gap > 0 && gap <= maxGap) {
+            const x = Math.max(a.x, b.x) + overlapX / 2;
+            annotations.push({
+              axis: 'y',
+              gap,
+              x1: x,
+              y1: b.y + b.h,
+              x2: x,
+              y2: a.y,
+              labelX: x + 0.08,
+              labelY: (b.y + b.h + a.y) / 2
+            });
+          }
+        }
+      }
+    }
+  }
+
+  const deduped = [];
+  const seen = new Set();
+  annotations
+    .sort((a, b) => a.gap - b.gap)
+    .forEach((ann) => {
+      const key = `${ann.axis}:${Math.round(ann.labelX * 4)}:${Math.round(ann.labelY * 4)}:${Math.round(ann.gap * 20)}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      deduped.push(ann);
+    });
+  return deduped.slice(0, 36);
+}
+
+function renderGapAnnotations(scale, wrapper) {
+  wrapper.querySelectorAll('.gap-guide, .gap-label').forEach((el) => el.remove());
+  const gaps = computeGapAnnotations(placedPhotos, currentCanvas);
+  gaps.forEach((gap) => {
+    const line = document.createElement('div');
+    line.className = `gap-guide ${gap.axis}`;
+    if (gap.axis === 'x') {
+      line.style.left = `${gap.x1 * scale}px`;
+      line.style.top = `${gap.y1 * scale}px`;
+      line.style.width = `${Math.max(1, (gap.x2 - gap.x1) * scale)}px`;
+      line.style.height = '0';
+    } else {
+      line.style.left = `${gap.x1 * scale}px`;
+      line.style.top = `${gap.y1 * scale}px`;
+      line.style.width = '0';
+      line.style.height = `${Math.max(1, (gap.y2 - gap.y1) * scale)}px`;
+    }
+    wrapper.appendChild(line);
+
+    const label = document.createElement('div');
+    label.className = 'gap-label';
+    label.textContent = `${toDisplay(gap.gap)} ${unitSuffix()}`;
+    label.style.left = `${gap.labelX * scale}px`;
+    label.style.top = `${gap.labelY * scale}px`;
+    wrapper.appendChild(label);
   });
 }
 
