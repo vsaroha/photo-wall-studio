@@ -145,6 +145,15 @@ window.addEventListener('resize', () => { if (placedPhotos.length) renderCanvas(
 });
 document.getElementById('layoutStyle').addEventListener('change', () => { saveState(); autoRegenerate(); });
 document.getElementById('artDirection').addEventListener('change', () => { saveState(); autoRegenerate(); });
+document.getElementById('gridSize').addEventListener('change', () => {
+  saveState();
+  if (placedPhotos.length > 0) renderCanvas();
+});
+document.getElementById('snapToGrid').addEventListener('change', saveState);
+document.getElementById('showGrid').addEventListener('change', () => {
+  saveState();
+  if (placedPhotos.length > 0) renderCanvas();
+});
 ['exportName', 'exportFormat', 'exportOrientation', 'exportLabels', 'exportLegend'].forEach(id => {
   document.getElementById(id).addEventListener('change', saveState);
 });

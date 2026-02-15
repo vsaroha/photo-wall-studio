@@ -78,6 +78,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .actions { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
 .export-checks { align-items: center; gap: 12px; flex-wrap: wrap; }
 .export-checks label { margin: 0; display: flex; align-items: center; gap: 6px; color: var(--text); font-size: 0.82rem; }
+.layout-checks { align-items: center; gap: 12px; flex-wrap: wrap; }
+.layout-checks label { margin: 0; display: flex; align-items: center; gap: 6px; color: var(--text); font-size: 0.82rem; }
 
 .layout-feedback {
   border-radius: 6px;
@@ -92,6 +94,19 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* Main canvas area */
 .main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; position: relative; overflow: auto; }
 .canvas-wrapper { position: relative; background: #fff; box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
+.canvas-wrapper.grid-visible {
+  background-image:
+    linear-gradient(to right, rgba(15, 52, 96, 0.12) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 52, 96, 0.12) 1px, transparent 1px),
+    linear-gradient(to right, rgba(15, 52, 96, 0.2) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 52, 96, 0.2) 1px, transparent 1px);
+  background-size:
+    var(--grid-step, 24px) var(--grid-step, 24px),
+    var(--grid-step, 24px) var(--grid-step, 24px),
+    var(--grid-major-step, 120px) var(--grid-major-step, 120px),
+    var(--grid-major-step, 120px) var(--grid-major-step, 120px);
+  background-position: 0 0, 0 0, 0 0, 0 0;
+}
 .shuffle-btn {
   position: absolute; top: -40px; right: 0; min-height: 34px; padding: 6px 12px;
   background: var(--accent2); color: #fff; border: none; border-radius: 4px;
@@ -129,6 +144,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .photo-rect:hover .resize-handle, .photo-rect.selected .resize-handle { background: var(--accent); }
 .overlap-warning { border-color: #e74c3c !important; }
 .out-of-bounds-warning { border-color: #f39c12 !important; }
+.marquee-box {
+  position: absolute;
+  border: 1px dashed rgba(233, 69, 96, 0.9);
+  background: rgba(233, 69, 96, 0.16);
+  pointer-events: none;
+  z-index: 250;
+}
 
 .empty-state { color: var(--text-dim); text-align: center; font-size: 0.9rem; }
 .empty-state p { margin-top: 8px; font-size: 0.8rem; }

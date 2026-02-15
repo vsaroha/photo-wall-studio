@@ -20,6 +20,7 @@ function renderCanvas(canvasDims) {
   wrapper.style.display = '';
   wrapper.style.width = (canvas.w * scale) + 'px';
   wrapper.style.height = (canvas.h * scale) + 'px';
+  applyCanvasGrid(scale, wrapper);
 
   // Dimension labels
   document.getElementById('dimTop').textContent = `${toDisplay(canvas.w)} ${unitSuffix()}`;
@@ -31,7 +32,8 @@ function renderCanvas(canvasDims) {
   // Render photos
   placedPhotos.forEach(p => {
     const el = document.createElement('div');
-    el.className = 'photo-rect' + (p.id === selectedId ? ' selected' : '');
+    const isSel = selectedIds.includes(p.id) || p.id === selectedId;
+    el.className = 'photo-rect' + (isSel ? ' selected' : '');
     el.dataset.id = p.id;
     el.style.left = (p.x * scale) + 'px';
     el.style.top = (p.y * scale) + 'px';
@@ -49,7 +51,9 @@ function renderCanvas(canvasDims) {
     el.addEventListener('mousedown', (e) => {
       if (e.target.classList.contains('resize-handle')) return;
       if (e.target.classList.contains('rotate-btn')) return;
-      selectPhoto(p.id);
+      const multi = e.shiftKey || e.ctrlKey || e.metaKey;
+      selectPhoto(p.id, { additive: multi, toggle: multi });
+      if (multi) return;
       startDrag(e, p.id);
     });
 
@@ -59,6 +63,20 @@ function renderCanvas(canvasDims) {
   checkOverlaps();
 }
 
+function applyCanvasGrid(scale, wrapper) {
+  if (!isGridVisible()) {
+    wrapper.classList.remove('grid-visible');
+    wrapper.style.removeProperty('--grid-step');
+    wrapper.style.removeProperty('--grid-major-step');
+    return;
+  }
+
+  const gridStepPx = Math.max(6, getGridStep() * scale);
+  wrapper.classList.add('grid-visible');
+  wrapper.style.setProperty('--grid-step', `${gridStepPx}px`);
+  wrapper.style.setProperty('--grid-major-step', `${gridStepPx * 5}px`);
+}
+
 function setLayoutFeedback(message, tone) {
   const el = document.getElementById('layoutFeedback');
   if (!el) return;
@@ -66,11 +84,31 @@ function setLayoutFeedback(message, tone) {
   el.textContent = message;
 }
 
-function selectPhoto(id) {
-  selectedId = id;
+function setSelectedIds(ids) {
+  selectedIds = Array.from(new Set((ids || []).filter(Number.isFinite)));
+  selectedId = selectedIds.length > 0 ? selectedIds[selectedIds.length - 1] : null;
+  updateSelectionClasses();
+}
+
+function updateSelectionClasses() {
   document.querySelectorAll('.photo-rect').forEach(el => {
-    el.classList.toggle('selected', parseInt(el.dataset.id) === id);
+    const pid = parseInt(el.dataset.id, 10);
+    el.classList.toggle('selected', selectedIds.includes(pid));
   });
+}
+
+function selectPhoto(id, opts) {
+  const options = opts || {};
+  const next = Array.isArray(selectedIds) ? [...selectedIds] : [];
+  if (!options.additive) {
+    setSelectedIds([id]);
+    return;
+  } else {
+    const idx = next.indexOf(id);
+    if (options.toggle && idx !== -1) next.splice(idx, 1);
+    else if (idx === -1) next.push(id);
+  }
+  setSelectedIds(next);
 }
 
 // ── Overlap detection ──

@@ -3,6 +3,7 @@ let unit = 'in';
 let photoEntries = []; // { id, w, h, qty, color } in inches
 let placedPhotos = []; // { id, entryId, x, y, w, h, rotated, color }
 let selectedId = null;
+let selectedIds = [];
 let idCounter = 0;
 let layoutSeed = 0;
 let regenTimer = null;
@@ -13,11 +14,81 @@ const COLORS = ['#e94560','#533483','#0f3460','#e07c24','#2ecc71','#3498db','#9b
 function toDisplay(inches) { return unit === 'cm' ? +(inches * 2.54).toFixed(1) : +inches.toFixed(2); }
 function fromDisplay(val) { return unit === 'cm' ? val / 2.54 : val; }
 function unitSuffix() { return unit === 'cm' ? 'cm' : 'in'; }
+function getGridStep() {
+  const raw = parseFloat(document.getElementById('gridSize').value);
+  const inUnits = fromDisplay(Number.isFinite(raw) ? raw : 1);
+  return Math.max(0.1, inUnits || 1);
+}
+function isSnapToGridEnabled() { return !!document.getElementById('snapToGrid').checked; }
+function isGridVisible() { return !!document.getElementById('showGrid').checked; }
+function isManualLayoutMode() { return document.getElementById('layoutStyle').value === 'manual'; }
+function snapToGridValue(value) {
+  if (!isSnapToGridEnabled()) return value;
+  const step = getGridStep();
+  return Math.round(value / step) * step;
+}
+
+function rectsOverlap(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+function computeManualCanvas(spacing) {
+  if (placedPhotos.length === 0) return { w: 10, h: 10 };
+  let maxX = 0, maxY = 0;
+  for (const p of placedPhotos) {
+    maxX = Math.max(maxX, p.x + p.w);
+    maxY = Math.max(maxY, p.y + p.h);
+  }
+  return { w: Math.max(10, maxX + spacing), h: Math.max(10, maxY + spacing) };
+}
+
+function findManualPlacement(w, h, spacing) {
+  const step = isSnapToGridEnabled() ? getGridStep() : Math.max(0.2, spacing || 0.2);
+  const bounds = computeManualCanvas(spacing);
+  const searchW = bounds.w + Math.max(spacing * 4, w * 2);
+  const searchH = bounds.h + Math.max(spacing * 4, h * 2);
+  const start = Math.max(0, spacing);
+
+  for (let y = start; y <= searchH; y += step) {
+    for (let x = start; x <= searchW; x += step) {
+      const candidate = { x, y, w, h };
+      let collides = false;
+      for (const p of placedPhotos) {
+        if (rectsOverlap(candidate, p)) {
+          collides = true;
+          break;
+        }
+      }
+      if (!collides) return { x, y };
+    }
+  }
+
+  return { x: bounds.w + spacing, y: spacing };
+}
+
+function appendEntryToManualLayout(entry) {
+  const spacing = fromDisplay(parseFloat(document.getElementById('spacing').value) || 0);
+  for (let i = 0; i < entry.qty; i++) {
+    const pos = findManualPlacement(entry.w, entry.h, spacing);
+    placedPhotos.push({
+      id: ++idCounter,
+      entryId: entry.id,
+      x: pos.x,
+      y: pos.y,
+      w: entry.w,
+      h: entry.h,
+      rotated: false,
+      color: entry.color
+    });
+  }
+  currentCanvas = computeManualCanvas(spacing);
+}
 
 function setUnit(u) {
   const sp = parseFloat(document.getElementById('spacing').value);
   const pw = parseFloat(document.getElementById('photoW').value);
   const ph = parseFloat(document.getElementById('photoH').value);
+  const gs = parseFloat(document.getElementById('gridSize').value);
 
   const oldUnit = unit;
   unit = u;
@@ -31,10 +102,12 @@ function setUnit(u) {
   document.getElementById('spacing').value = convert(sp);
   document.getElementById('photoW').value = convert(pw);
   document.getElementById('photoH').value = convert(ph);
+  document.getElementById('gridSize').value = convert(gs);
 
   document.querySelectorAll('.unit-toggle button').forEach(b => b.classList.toggle('active', b.dataset.unit === u));
   document.querySelectorAll('.unit-label').forEach(el => el.textContent = unitSuffix());
   renderPhotoList();
+  if (placedPhotos.length > 0) renderCanvas();
   saveState();
 }
 
@@ -81,8 +154,17 @@ function addPhoto() {
   if (!w || !h || w <= 0 || h <= 0) { showToast('Enter valid dimensions'); return; }
 
   const color = COLORS[photoEntries.length % COLORS.length];
-  photoEntries.push({ id: ++idCounter, w, h, qty, color });
+  const entry = { id: ++idCounter, w, h, qty, color };
+  photoEntries.push(entry);
   renderPhotoList();
+
+  if (isManualLayoutMode() && placedPhotos.length > 0) {
+    appendEntryToManualLayout(entry);
+    renderCanvas(currentCanvas);
+    saveState();
+    return;
+  }
+
   saveState();
   autoRegenerate();
 }
@@ -183,6 +265,7 @@ function clearAll() {
   photoEntries = [];
   placedPhotos = [];
   selectedId = null;
+  selectedIds = [];
   layoutSeed = 0;
   renderPhotoList();
   document.getElementById('canvasWrapper').style.display = 'none';
@@ -207,6 +290,9 @@ function saveState() {
     spacing: document.getElementById('spacing').value,
     layoutStyle: document.getElementById('layoutStyle').value,
     artDirection: document.getElementById('artDirection').value,
+    gridSize: document.getElementById('gridSize').value,
+    snapToGrid: document.getElementById('snapToGrid').checked,
+    showGrid: document.getElementById('showGrid').checked,
     photoW: document.getElementById('photoW').value,
     photoH: document.getElementById('photoH').value,
     photoQty: document.getElementById('photoQty').value,
@@ -229,12 +315,17 @@ function loadState() {
     photoEntries = state.photoEntries || [];
     idCounter = state.idCounter || 0;
     layoutSeed = state.layoutSeed || 0;
+    selectedId = null;
+    selectedIds = [];
 
     document.getElementById('prefRows').value = state.prefRows || '2';
     document.getElementById('prefCols').value = state.prefCols || '3';
     document.getElementById('spacing').value = state.spacing || '2';
     document.getElementById('layoutStyle').value = state.layoutStyle || 'centered';
     document.getElementById('artDirection').value = state.artDirection || 'balanced';
+    document.getElementById('gridSize').value = state.gridSize || '1';
+    document.getElementById('snapToGrid').checked = state.snapToGrid !== false;
+    document.getElementById('showGrid').checked = state.showGrid === true;
     if (state.photoW) document.getElementById('photoW').value = state.photoW;
     if (state.photoH) document.getElementById('photoH').value = state.photoH;
     if (state.photoQty) document.getElementById('photoQty').value = state.photoQty;

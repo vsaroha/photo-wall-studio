@@ -149,11 +149,13 @@ function runLayout() {
   const tunedSpacing = getTunedSpacing(spacing, art);
   placedPhotos = [];
   selectedId = null;
+  selectedIds = [];
 
   const photos = expandPhotos();
 
   const style = getLayoutStyle();
   switch (style) {
+    case 'manual': layoutManualDesign(photos, grid, tunedSpacing, art); break;
     case 'centered': layoutBlockGrid(photos, grid, tunedSpacing, art); break;
     case 'masonry':  layoutMasonry(photos, grid, tunedSpacing, art); break;
     case 'scattered': layoutAnchorSatellite(photos, grid, tunedSpacing, art); break;
@@ -206,6 +208,32 @@ function distributeEvenly(items, k) {
     idx += size;
   }
   return buckets.filter(b => b.length > 0);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Strategy 0: MANUAL DESIGN BASE
+// ═══════════════════════════════════════════════════════════════
+function layoutManualDesign(photos, grid, spacing, art) {
+  const ordered = orderPhotosForArt(photos, art, 'height');
+  const widthBias = art.arrangement === 'strict' ? 1.12 : (art.arrangement === 'eclectic' ? 0.82 : 0.95);
+  const targetW = estimateTargetWidth(ordered, grid, spacing, art) * widthBias;
+
+  let x = spacing;
+  let y = spacing;
+  let rowH = 0;
+
+  for (const p of ordered) {
+    if (x > spacing && x + p.w > targetW - spacing * 0.2) {
+      x = spacing;
+      y += rowH + spacing;
+      rowH = 0;
+    }
+    placePhoto(p, x, y);
+    x += p.w + spacing;
+    rowH = Math.max(rowH, p.h);
+  }
+
+  normalizePositions(spacing);
 }
 
 

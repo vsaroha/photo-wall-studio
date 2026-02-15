@@ -35,6 +35,7 @@
     <div style="margin-top:8px">
       <label>Layout Style</label>
       <select id="layoutStyle">
+        <option value="manual">Manual Design</option>
         <option value="centered">Block Grid</option>
         <option value="masonry">Masonry Columns</option>
         <option value="scattered">Anchor + Satellite</option>
@@ -54,6 +55,16 @@
         <option value="gallery">Gallery Clean</option>
         <option value="salon">Salon Dense</option>
       </select>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div>
+        <label>Grid Size (<span class="unit-label">in</span>)</label>
+        <input type="number" id="gridSize" step="0.1" min="0.1" value="1" oninput="saveState()">
+      </div>
+    </div>
+    <div class="row layout-checks" style="margin-top:8px">
+      <label><input type="checkbox" id="snapToGrid" checked> Snap to grid</label>
+      <label><input type="checkbox" id="showGrid"> Show grid lines</label>
     </div>
   </div>
 
@@ -77,6 +88,20 @@
       <div style="flex:0"><button type="button" class="btn btn-primary btn-sm" onclick="addPhoto()" aria-label="Add photo size entry" style="margin-bottom:1px">＋</button></div>
     </div>
     <div class="photo-list" id="photoList"></div>
+  </div>
+
+  <!-- Arrange Selection -->
+  <div class="section">
+    <h3>Arrange Selection</h3>
+    <div class="row">
+      <div><button type="button" class="btn btn-secondary btn-sm" onclick="autoSpaceSelected('x')">Auto-Space X</button></div>
+      <div><button type="button" class="btn btn-secondary btn-sm" onclick="autoSpaceSelected('y')">Auto-Space Y</button></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div><button type="button" class="btn btn-secondary btn-sm" onclick="centerSelected('x')">Center X</button></div>
+      <div><button type="button" class="btn btn-secondary btn-sm" onclick="centerSelected('y')">Center Y</button></div>
+      <div><button type="button" class="btn btn-secondary btn-sm" onclick="centerSelected('both')">Center Both</button></div>
+    </div>
   </div>
 
   <!-- Export Settings -->
@@ -118,7 +143,7 @@
     <button type="button" class="btn btn-danger btn-sm" onclick="clearAll()">Clear All</button>
   </div>
   <div class="layout-feedback info" id="layoutFeedback" role="status" aria-live="polite">No layout generated yet.</div>
-  <div class="keyboard-hint">R = rotate · Del = remove · Drag to move</div>
+  <div class="keyboard-hint">R = rotate · Del = remove · Drag to move · Shift/Ctrl/Cmd+Click = multi-select · Drag empty canvas = box-select</div>
 </div>
 
 <div class="main" id="mainArea">
