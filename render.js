@@ -56,7 +56,14 @@ function renderCanvas(canvasDims) {
       if (e.target.classList.contains('rotate-btn')) return;
       if (e.target.classList.contains('delete-btn')) return;
       const multi = e.shiftKey || e.ctrlKey || e.metaKey;
-      selectPhoto(p.id, { additive: multi, toggle: multi });
+      const alreadySelected = Array.isArray(selectedIds) && selectedIds.includes(p.id);
+      const hasMultiSelection = Array.isArray(selectedIds) && selectedIds.length > 1;
+      if (!multi && alreadySelected && hasMultiSelection) {
+        selectedId = p.id;
+        updateSelectionClasses();
+      } else {
+        selectPhoto(p.id, { additive: multi, toggle: multi });
+      }
       if (multi) return;
       startDrag(e, p.id);
     });

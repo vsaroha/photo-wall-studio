@@ -5,8 +5,8 @@ function getActiveSelectionIds() {
   return [];
 }
 
-function getSelectionPhotos() {
-  const ids = getActiveSelectionIds();
+function getSelectionPhotos(selectionIds) {
+  const ids = Array.isArray(selectionIds) ? selectionIds : getActiveSelectionIds();
   return ids.map(id => placedPhotos.find(p => p.id === id)).filter(Boolean);
 }
 
@@ -182,7 +182,8 @@ function isTextInputTarget(target) {
 
 function moveSelectedPhotosBy(deltaX, deltaY, opts) {
   const preview = !!(opts && opts.preview);
-  const photos = getSelectionPhotos();
+  const ids = opts && Array.isArray(opts.ids) ? opts.ids : null;
+  const photos = getSelectionPhotos(ids);
   if (photos.length === 0) return false;
 
   const b = getSelectionBounds(photos);
@@ -403,9 +404,9 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     const dx = nudge[0] * step;
     const dy = nudge[1] * step;
-    if (!moveSelectedPhotosBy(dx, dy, { preview: true })) return;
+    if (!moveSelectedPhotosBy(dx, dy, { preview: true, ids: activeIds })) return;
     pushUndoState();
-    moveSelectedPhotosBy(dx, dy);
+    moveSelectedPhotosBy(dx, dy, { ids: activeIds });
     renderCanvas();
     saveState();
     return;

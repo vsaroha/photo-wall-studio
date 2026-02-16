@@ -118,3 +118,28 @@ test('moveSelectedPhotosBy blocks movement when selection is against canvas edge
     { id: 2, x: 5, y: 3 }
   ]);
 });
+
+test('moveSelectedPhotosBy can move explicit selection ids together', () => {
+  const app = createAppContext();
+
+  app.run(`
+    currentCanvas = { w: 20, h: 20 };
+    placedPhotos = [
+      { id: 1, entryId: 11, x: 1, y: 1, w: 2, h: 2, rotated: false, color: '#111' },
+      { id: 2, entryId: 11, x: 6, y: 1, w: 2, h: 2, rotated: false, color: '#111' },
+      { id: 3, entryId: 11, x: 12, y: 1, w: 2, h: 2, rotated: false, color: '#111' }
+    ];
+    selectedIds = [1];
+    selectedId = 1;
+  `);
+
+  const moved = app.run('moveSelectedPhotosBy(1, 0, { ids: [1, 2] })');
+  const photos = app.json('placedPhotos.map((p) => ({ id: p.id, x: p.x, y: p.y }))');
+
+  assert.equal(moved, true);
+  assert.deepEqual(photos, [
+    { id: 1, x: 2, y: 1 },
+    { id: 2, x: 7, y: 1 },
+    { id: 3, x: 12, y: 1 }
+  ]);
+});
