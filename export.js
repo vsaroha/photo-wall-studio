@@ -59,14 +59,42 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+function getMeasurementScale(pageW, pageH) {
+  return clamp(Math.sqrt(Math.max(pageW, pageH) / 11), 1, 2.3);
+}
+
+function drawMeasurementChip(doc, text, cx, cy, pageW, pageH, scaleFactor, fontPt) {
+  doc.setFontSize(fontPt);
+  const textW = doc.getTextWidth(text);
+  const padX = 0.04 * scaleFactor;
+  const padY = 0.017 * scaleFactor;
+  const chipW = textW + padX * 2;
+  const chipH = (fontPt / 72) * 1.15 + padY * 2;
+  const x = clamp(cx - chipW / 2, 0.1, pageW - chipW - 0.1);
+  const y = clamp(cy - chipH / 2, 0.1, pageH - chipH - 0.1);
+  const radius = Math.min(chipH * 0.3, 0.07 * scaleFactor);
+
+  doc.setLineWidth(Math.max(0.0025, 0.0035 * scaleFactor));
+  doc.setDrawColor(175, 186, 198);
+  doc.setFillColor(246, 249, 252);
+  if (typeof doc.roundedRect === 'function') {
+    doc.roundedRect(x, y, chipW, chipH, radius, radius, 'FD');
+  } else {
+    doc.rect(x, y, chipW, chipH, 'FD');
+  }
+
+  doc.setTextColor(56, 73, 93);
+  doc.text(text, x + chipW / 2, y + chipH / 2, { align: 'center', baseline: 'middle' });
+}
+
 function drawGapAnnotationsPDF(doc, gapAnnotations, scale, offsetX, offsetY, pageW, pageH) {
   if (!gapAnnotations || gapAnnotations.length === 0) return;
 
-  doc.setDrawColor(70);
-  doc.setTextColor(50);
-  doc.setFontSize(Math.max(5, Math.min(7.2, 5.8 * scale + 0.5)));
+  const scaleFactor = getMeasurementScale(pageW, pageH);
+  const fontPt = Math.max(7.5, Math.min(13, 7.5 * scaleFactor));
+  doc.setDrawColor(56, 86, 122);
   if (typeof doc.setLineDashPattern === 'function') {
-    doc.setLineDashPattern([0.03, 0.02], 0);
+    doc.setLineDashPattern([0.035 * scaleFactor, 0.022 * scaleFactor], 0);
   }
 
   gapAnnotations.forEach((gap) => {
@@ -74,18 +102,47 @@ function drawGapAnnotationsPDF(doc, gapAnnotations, scale, offsetX, offsetY, pag
     const y1 = offsetY + gap.y1 * scale;
     const x2 = offsetX + gap.x2 * scale;
     const y2 = offsetY + gap.y2 * scale;
-    doc.setLineWidth(Math.max(0.004, 0.006 * scale));
+    doc.setLineWidth(Math.max(0.003, 0.0045 * scaleFactor));
     doc.line(x1, y1, x2, y2);
 
     const label = `${toDisplay(gap.gap)} ${unitSuffix()}`;
     const lx = clamp(offsetX + gap.labelX * scale, 0.12, pageW - 0.12);
     const ly = clamp(offsetY + gap.labelY * scale, 0.12, pageH - 0.18);
-    doc.text(label, lx, ly, { align: 'center' });
+    drawMeasurementChip(doc, label, lx, ly, pageW, pageH, scaleFactor, fontPt);
   });
 
   if (typeof doc.setLineDashPattern === 'function') {
     doc.setLineDashPattern([], 0);
   }
+}
+
+function drawCanvasDimensionsPDF(doc, canvas, pageW, pageH, offsetX, offsetY, layoutW, layoutH) {
+  const scaleFactor = getMeasurementScale(pageW, pageH);
+  const fontPt = Math.max(8.5, Math.min(14, 8.5 * scaleFactor));
+  const topLabel = `${toDisplay(canvas.w)} ${unitSuffix()}`;
+  const leftLabel = `${toDisplay(canvas.h)} ${unitSuffix()}`;
+  const offset = 0.13 * scaleFactor;
+
+  drawMeasurementChip(
+    doc,
+    topLabel,
+    offsetX + layoutW / 2,
+    offsetY - offset,
+    pageW,
+    pageH,
+    scaleFactor,
+    fontPt
+  );
+  drawMeasurementChip(
+    doc,
+    leftLabel,
+    offsetX - offset,
+    offsetY + layoutH / 2,
+    pageW,
+    pageH,
+    scaleFactor,
+    fontPt
+  );
 }
 
 // ── PDF Export ──
@@ -146,6 +203,7 @@ function exportPDF() {
     ? computeGapAnnotations(placedPhotos, canvas)
     : [];
   drawGapAnnotationsPDF(doc, gapAnnotations, scale, offsetX, offsetY, pageW, pageH);
+  drawCanvasDimensionsPDF(doc, canvas, pageW, pageH, offsetX, offsetY, layoutW, layoutH);
 
   if (options.includeLegend) {
     doc.setFontSize(6.5);
