@@ -236,14 +236,25 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: var(--space-2);
+  border-radius: 14px;
+  background:
+    radial-gradient(700px circle at 50% 0%, rgba(41, 74, 120, 0.2) 0%, rgba(41, 74, 120, 0) 70%),
+    linear-gradient(180deg, rgba(16, 29, 49, 0.72) 0%, rgba(14, 24, 40, 0.72) 100%);
+  border: 1px solid rgba(51, 78, 119, 0.7);
 }
-.canvas-wrapper { position: relative; background: #fff; box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
+.canvas-wrapper {
+  position: relative;
+  background: #fff;
+  border: 1px solid #d8e0ed;
+  box-shadow: 0 22px 44px rgba(6, 12, 24, 0.32), 0 2px 5px rgba(8, 15, 28, 0.15);
+}
 .canvas-wrapper.grid-visible {
   background-image:
-    linear-gradient(to right, rgba(15, 52, 96, 0.12) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(15, 52, 96, 0.12) 1px, transparent 1px),
-    linear-gradient(to right, rgba(15, 52, 96, 0.2) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(15, 52, 96, 0.2) 1px, transparent 1px);
+    linear-gradient(to right, rgba(15, 52, 96, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 52, 96, 0.07) 1px, transparent 1px),
+    linear-gradient(to right, rgba(15, 52, 96, 0.14) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 52, 96, 0.14) 1px, transparent 1px);
   background-size:
     var(--grid-step, 24px) var(--grid-step, 24px),
     var(--grid-step, 24px) var(--grid-step, 24px),
@@ -252,10 +263,19 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   background-position: 0 0, 0 0, 0 0, 0 0;
 }
 .canvas-wrapper .dim-label {
-  position: absolute; font-size: 11px; color: var(--text-dim); white-space: nowrap;
+  position: absolute;
+  font-size: 10px;
+  line-height: 1;
+  color: #dce8fa;
+  white-space: nowrap;
+  background: rgba(26, 49, 82, 0.85);
+  border: 1px solid rgba(173, 199, 236, 0.35);
+  border-radius: 999px;
+  padding: 4px 7px;
+  letter-spacing: 0.02em;
 }
-.canvas-wrapper .dim-label.top { top: -18px; left: 50%; transform: translateX(-50%); }
-.canvas-wrapper .dim-label.left { left: -50px; top: 50%; transform: translateY(-50%) rotate(-90deg); }
+.canvas-wrapper .dim-label.top { top: -28px; left: 50%; transform: translateX(-50%); }
+.canvas-wrapper .dim-label.left { left: -68px; top: 50%; transform: translateY(-50%) rotate(-90deg); }
 
 /* Photo rectangles */
 .photo-rect {
@@ -302,12 +322,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .gap-label {
   position: absolute;
   transform: translate(-50%, -50%);
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(15, 52, 96, 0.3);
-  border-radius: 3px;
-  padding: 1px 4px;
-  font-size: 10px;
-  color: #23395d;
+  background: rgba(242, 247, 255, 0.9);
+  border: 1px solid rgba(40, 72, 116, 0.28);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 9px;
+  color: #2e4b76;
   pointer-events: none;
   z-index: 181;
   white-space: nowrap;
@@ -320,8 +340,17 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   z-index: 250;
 }
 
-.empty-state { color: var(--text-dim); text-align: center; font-size: 0.9rem; }
-.empty-state p { margin-top: 8px; font-size: 0.8rem; }
+.empty-state {
+  color: #baccdf;
+  text-align: center;
+  font-size: 0.9rem;
+  max-width: 420px;
+  background: rgba(20, 35, 60, 0.65);
+  border: 1px dashed rgba(126, 157, 201, 0.55);
+  border-radius: 14px;
+  padding: 24px 20px;
+}
+.empty-state p { margin-top: 10px; font-size: 0.85rem; }
 
 .toast {
   position: fixed; bottom: 20px; right: 20px; padding: 10px 18px;
