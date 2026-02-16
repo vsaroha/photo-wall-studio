@@ -1,6 +1,6 @@
-# Collage Layout Planner
+# Photo Wall Studio
 
-A lightweight browser app for planning collage photo layouts.
+A lightweight browser app for planning photo walls and collage layouts.
 
 It supports multiple layout strategies, direct canvas editing, grid snapping, overlap detection, and PDF export.
 
@@ -13,7 +13,18 @@ It supports multiple layout strategies, direct canvas editing, grid snapping, ov
 ## Run locally
 
 1. Open `index.html` in a browser.
-2. Optional: use a local static server if you prefer (for example, `python -m http.server`).
+2. Optional: use a local static server if you prefer (for example, `python3 -m http.server`).
+
+## Deploy to Vercel (frontend only)
+
+1. Push this repo to GitHub/GitLab/Bitbucket.
+2. In Vercel, import the repo as a new project.
+3. Set Framework Preset to `Other` (or leave it unselected).
+4. No build command is required.
+5. Output directory should be the project root (`.`) if prompted.
+6. Deploy.
+
+This repo now includes `vercel.json` with production headers and cache behavior for static hosting.
 
 ## Core workflow
 
@@ -21,7 +32,7 @@ It supports multiple layout strategies, direct canvas editing, grid snapping, ov
 2. Enter `W / H / Qty` and click `+` to place photo boxes directly on the canvas.
 3. Optionally choose layout style and art direction, then use `Generate Design` / `Shuffle` for auto-arrangement.
 4. Refine on canvas using drag, resize handles, rotate (`R`), delete (`Delete` key or box `✕` button), marquee selection, and alignment/spacing tools.
-6. Export as PDF.
+5. Export as PDF.
 
 ## Features
 
@@ -33,7 +44,7 @@ It supports multiple layout strategies, direct canvas editing, grid snapping, ov
 - Export panel collapsed by default in top controls
 - Validation feedback: overlap and out-of-bounds warnings
 - Undo support
-- Local persistence via `localStorage` key `collage-planner`
+- Local persistence via `localStorage` key `photo-wall-studio` (automatically reads legacy `photo-wall-planner` and `collage-planner` data)
 
 ## File overview
 
@@ -45,6 +56,20 @@ It supports multiple layout strategies, direct canvas editing, grid snapping, ov
 - `interact.js`: drag, resize, rotate, delete, keyboard shortcuts, marquee selection
 - `export.js`: PDF generation and app bootstrapping
 - `MAP.md`: architecture and function map
+
+## Production checklist
+
+1. Run syntax checks:
+   - `node --check state.js`
+   - `node --check layout.js`
+   - `node --check render.js`
+   - `node --check interact.js`
+   - `node --check export.js`
+2. Verify in browser:
+   - add boxes with `+`
+   - delete from canvas (`✕` and keyboard `Delete`)
+   - generate/shuffle/undo
+   - export PDF
 
 ## Notes
 

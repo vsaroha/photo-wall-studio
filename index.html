@@ -3,14 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Collage Layout Planner</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<meta name="description" content="Plan photo walls and collage layouts in your browser.">
+<meta name="theme-color" content="#111827">
+<title>Photo Wall Studio</title>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="sidebar">
-  <h1>📐 Collage Planner</h1>
+  <h1>📐 Photo Wall Studio</h1>
 
   <!-- Units -->
   <div class="section">
@@ -114,7 +116,7 @@
         <div class="export-body">
           <div>
             <label>File Name</label>
-            <input type="text" id="exportName" value="collage-layout" maxlength="80" oninput="saveState()">
+            <input type="text" id="exportName" value="photo-wall-studio-layout" maxlength="80" oninput="saveState()">
           </div>
           <div class="row" style="margin-top:8px">
             <div>
@@ -163,12 +165,35 @@
   </div>
 </div>
 
+<div class="onboarding-overlay" id="onboardingOverlay" role="dialog" aria-modal="true" aria-labelledby="onboardingTitle" aria-describedby="onboardingBody" hidden>
+  <div class="onboarding-banner">
+    <button
+      type="button"
+      class="onboarding-close"
+      id="onboardingClose"
+      aria-label="Close onboarding"
+      onclick="closeOnboardingBanner()"
+    >✕</button>
+    <h2 id="onboardingTitle">Welcome to Photo Wall Studio</h2>
+    <p id="onboardingBody">Plan your wall collage size-by-size before printing. Quick start:</p>
+    <ol class="onboarding-steps">
+      <li>Enter <b>W / H / Qty</b>, then press <b>＋</b> to add photo boxes.</li>
+      <li>Click <b>Generate Design</b> or <b>Shuffle</b> to arrange your layout.</li>
+      <li>Fine-tune on canvas: drag to move, use <b>↻</b> to rotate and <b>✕</b> to remove.</li>
+      <li>Use alignment tools as needed, then click <b>Export PDF</b>.</li>
+    </ol>
+    <div class="onboarding-actions">
+      <button type="button" class="btn btn-primary" onclick="closeOnboardingBanner()">Start Designing</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
-<script src="state.js"></script>
-<script src="layout.js"></script>
-<script src="render.js"></script>
-<script src="interact.js"></script>
-<script src="export.js"></script>
+<script defer src="state.js"></script>
+<script defer src="layout.js"></script>
+<script defer src="render.js"></script>
+<script defer src="interact.js"></script>
+<script defer src="export.js"></script>
 </body>
 </html>

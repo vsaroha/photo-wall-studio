@@ -10,6 +10,8 @@ let regenTimer = null;
 let undoStack = [];
 let isApplyingUndo = false;
 const MAX_UNDO_STEPS = 60;
+const STORAGE_KEY = 'photo-wall-studio';
+const LEGACY_STORAGE_KEYS = ['photo-wall-planner', 'collage-planner'];
 
 const COLORS = ['#e94560','#533483','#0f3460','#e07c24','#2ecc71','#3498db','#9b59b6','#1abc9c','#e74c3c','#f39c12'];
 
@@ -107,7 +109,7 @@ function applyUndoSnapshot(snapshot) {
   document.getElementById('photoW').value = c.photoW || document.getElementById('photoW').value;
   document.getElementById('photoH').value = c.photoH || document.getElementById('photoH').value;
   document.getElementById('photoQty').value = c.photoQty || document.getElementById('photoQty').value;
-  document.getElementById('exportName').value = c.exportName || 'collage-layout';
+  document.getElementById('exportName').value = c.exportName || 'photo-wall-studio-layout';
   document.getElementById('exportFormat').value = c.exportFormat || 'auto';
   document.getElementById('exportOrientation').value = c.exportOrientation || 'auto';
   document.getElementById('exportLabels').checked = c.exportLabels !== false;
@@ -426,12 +428,18 @@ function saveState() {
     exportLabels: document.getElementById('exportLabels').checked,
     exportLegend: document.getElementById('exportLegend').checked,
   };
-  try { localStorage.setItem('collage-planner', JSON.stringify(state)); } catch(e) {}
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
 }
 
 function loadState() {
   try {
-    const raw = localStorage.getItem('collage-planner');
+    let raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      for (const key of LEGACY_STORAGE_KEYS) {
+        raw = localStorage.getItem(key);
+        if (raw) break;
+      }
+    }
     if (!raw) return;
     const state = JSON.parse(raw);
 
