@@ -134,6 +134,15 @@ function generateAnother() {
   runLayout();
 }
 
+function confirmClearAll() {
+  if (photoEntries.length === 0 && placedPhotos.length === 0) {
+    showToast('Nothing to clear');
+    return;
+  }
+  if (!window.confirm('Clear all photos and reset the current layout?')) return;
+  clearAll();
+}
+
 function expandPhotos() {
   let photos = [];
   photoEntries.forEach(entry => {
