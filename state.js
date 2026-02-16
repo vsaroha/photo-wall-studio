@@ -12,6 +12,7 @@ let isApplyingUndo = false;
 const MAX_UNDO_STEPS = 60;
 const STORAGE_KEY = 'photo-wall-studio';
 const LEGACY_STORAGE_KEYS = ['photo-wall-planner', 'collage-planner'];
+const ONBOARDING_STORAGE_KEY = 'photo-wall-studio-onboarding-seen';
 
 const COLORS = ['#e94560','#533483','#0f3460','#e07c24','#2ecc71','#3498db','#9b59b6','#1abc9c','#e74c3c','#f39c12'];
 
@@ -479,4 +480,46 @@ function loadState() {
     renderPhotoList();
     undoStack = [];
   } catch(e) {}
+}
+
+function hasSeenOnboarding() {
+  try {
+    return localStorage.getItem(ONBOARDING_STORAGE_KEY) === '1';
+  } catch (e) {
+    return false;
+  }
+}
+
+function markOnboardingSeen() {
+  try { localStorage.setItem(ONBOARDING_STORAGE_KEY, '1'); } catch (e) {}
+}
+
+function closeOnboardingBanner() {
+  const overlay = document.getElementById('onboardingOverlay');
+  if (!overlay) return;
+  overlay.hidden = true;
+  markOnboardingSeen();
+}
+
+function showOnboardingBanner() {
+  const overlay = document.getElementById('onboardingOverlay');
+  if (!overlay) return;
+  overlay.hidden = false;
+  const closeBtn = document.getElementById('onboardingClose');
+  if (closeBtn) closeBtn.focus();
+}
+
+function initOnboardingBanner() {
+  const overlay = document.getElementById('onboardingOverlay');
+  if (!overlay) return;
+  if (!overlay.dataset.bound) {
+    overlay.dataset.bound = '1';
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeOnboardingBanner();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !overlay.hidden) closeOnboardingBanner();
+    });
+  }
+  if (!hasSeenOnboarding()) showOnboardingBanner();
 }

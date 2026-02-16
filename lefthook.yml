@@ -1,0 +1,4 @@
+pre-commit:
+  commands:
+    validate:
+      run: ./scripts/test.sh

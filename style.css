@@ -398,6 +398,66 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 .empty-state p { margin-top: 10px; font-size: 0.85rem; }
 
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(7, 13, 24, 0.72);
+  backdrop-filter: blur(2px);
+}
+.onboarding-overlay[hidden] { display: none; }
+.onboarding-banner {
+  position: relative;
+  width: min(640px, 100%);
+  border-radius: 16px;
+  padding: 22px 22px 18px;
+  border: 1px solid rgba(143, 171, 209, 0.5);
+  background: linear-gradient(180deg, #20385b 0%, #172944 100%);
+  box-shadow: 0 18px 38px rgba(7, 13, 24, 0.42);
+}
+.onboarding-banner h2 {
+  font-size: 1.25rem;
+  line-height: 1.2;
+  margin-bottom: 8px;
+  color: #f6fbff;
+}
+.onboarding-banner p {
+  color: #cde0fb;
+  font-size: 0.88rem;
+  margin-bottom: 8px;
+}
+.onboarding-steps {
+  margin-left: 18px;
+  color: #dbe8fb;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+.onboarding-steps li + li { margin-top: 4px; }
+.onboarding-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+.onboarding-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(188, 210, 239, 0.42);
+  border-radius: 999px;
+  background: rgba(17, 32, 52, 0.75);
+  color: #f0f6ff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+.onboarding-close:hover { background: rgba(38, 62, 98, 0.92); }
+
 .toast {
   position: fixed; bottom: 20px; right: 20px; padding: 10px 18px;
   background: var(--surface2); color: var(--text); border-radius: var(--radius);
@@ -463,4 +523,11 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     grid-template-columns: 1fr;
   }
   .empty-state { width: 100%; }
+  .onboarding-banner {
+    padding: 18px 16px 14px;
+    border-radius: 14px;
+  }
+  .onboarding-banner h2 { font-size: 1.06rem; padding-right: 28px; }
+  .onboarding-steps { font-size: 0.8rem; }
+  .onboarding-actions .btn { width: 100%; }
 }

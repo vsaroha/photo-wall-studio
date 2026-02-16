@@ -32,24 +32,68 @@ function shiftSelectionIntoCanvas(photos) {
   }
 }
 
-function autoSpaceSelected(axis) {
-  const photos = getSelectionPhotos();
-  if (photos.length < 2) {
-    showToast('Select at least 2 photos');
-    return;
-  }
-  pushUndoState();
+function groupSelectionLanes(photos, axis) {
+  if (!photos || photos.length === 0) return [];
+  const orthoStartKey = axis === 'x' ? 'y' : 'x';
+  const orthoSizeKey = axis === 'x' ? 'h' : 'w';
+  const ordered = [...photos].sort((a, b) => {
+    const ac = a[orthoStartKey] + a[orthoSizeKey] / 2;
+    const bc = b[orthoStartKey] + b[orthoSizeKey] / 2;
+    return ac - bc;
+  });
+  const lanes = [];
 
-  const sorted = [...photos].sort((a, b) => axis === 'y' ? a.y - b.y : a.x - b.x);
+  ordered.forEach((p) => {
+    const pStart = p[orthoStartKey];
+    const pEnd = pStart + p[orthoSizeKey];
+    let bestLane = null;
+    let bestOverlap = -Infinity;
+
+    lanes.forEach((lane) => {
+      const overlap = Math.min(pEnd, lane.end) - Math.max(pStart, lane.start);
+      const laneSize = Math.max(0.001, lane.end - lane.start);
+      const minSize = Math.min(p[orthoSizeKey], laneSize);
+      const minRequired = Math.max(0.08, minSize * 0.22);
+      if (overlap > minRequired && overlap > bestOverlap) {
+        bestOverlap = overlap;
+        bestLane = lane;
+      }
+    });
+
+    if (!bestLane) {
+      lanes.push({ start: pStart, end: pEnd, photos: [p] });
+      return;
+    }
+
+    bestLane.photos.push(p);
+    bestLane.start = Math.min(bestLane.start, pStart);
+    bestLane.end = Math.max(bestLane.end, pEnd);
+  });
+
+  return lanes
+    .sort((a, b) => a.start - b.start)
+    .map((lane) => lane.photos);
+}
+
+function autoSpaceGroup(group, axis, canvasSpan) {
+  if (!group || group.length < 2) return true;
+  const sorted = [...group].sort((a, b) => axis === 'y' ? a.y - b.y : a.x - b.x);
   const first = sorted[0];
   const last = sorted[sorted.length - 1];
   const spanStart = axis === 'y' ? first.y : first.x;
   const spanEnd = axis === 'y' ? (last.y + last.h) : (last.x + last.w);
+  const spanSize = Math.max(0, spanEnd - spanStart);
   const totalSize = sorted.reduce((sum, p) => sum + (axis === 'y' ? p.h : p.w), 0);
-  const gaps = sorted.length - 1;
-  const gapSize = gaps > 0 ? Math.max(0, (spanEnd - spanStart - totalSize) / gaps) : 0;
 
-  let cursor = spanStart;
+  if (totalSize > canvasSpan + 1e-6) return false;
+
+  const gaps = sorted.length - 1;
+  const targetSpan = Math.max(spanSize, totalSize);
+  const maxStart = Math.max(0, canvasSpan - targetSpan);
+  const boundedStart = Math.min(Math.max(0, spanStart), maxStart);
+  const gapSize = gaps > 0 ? (targetSpan - totalSize) / gaps : 0;
+
+  let cursor = boundedStart;
   sorted.forEach((p) => {
     if (axis === 'y') {
       p.y = cursor;
@@ -58,6 +102,40 @@ function autoSpaceSelected(axis) {
       p.x = cursor;
       cursor += p.w + gapSize;
     }
+  });
+  return true;
+}
+
+function autoSpaceSelected(axis) {
+  const photos = getSelectionPhotos();
+  if (photos.length < 2) {
+    showToast('Select at least 2 photos');
+    return;
+  }
+
+  const canvasSpan = axis === 'y' ? currentCanvas.h : currentCanvas.w;
+  const lanes = groupSelectionLanes(photos, axis);
+  const laneGroups = lanes.length > 0 ? lanes : [photos];
+  const hasAnyGroup = laneGroups.some(group => group.length > 1);
+  if (!hasAnyGroup) {
+    showToast('Select at least 2 aligned photos');
+    return;
+  }
+
+  const allFit = laneGroups.every((group) => {
+    if (group.length < 2) return true;
+    const totalSize = group.reduce((sum, p) => sum + (axis === 'y' ? p.h : p.w), 0);
+    return totalSize <= canvasSpan + 1e-6;
+  });
+  if (!allFit) {
+    showToast(`Auto-Space ${axis.toUpperCase()} can't fit one or more groups on canvas`);
+    return;
+  }
+
+  pushUndoState();
+  laneGroups.forEach((group) => {
+    if (group.length < 2) return;
+    autoSpaceGroup(group, axis, canvasSpan);
   });
 
   keepAllPhotosInCanvas(photos);
@@ -75,23 +153,59 @@ function centerSelected(axis) {
 
   const b = getSelectionBounds(photos);
   if (!b) return;
+  const cx = (b.minX + b.maxX) / 2;
+  const cy = (b.minY + b.maxY) / 2;
+
   if (axis === 'x') {
-    const targetX = currentCanvas.w / 2;
-    photos.forEach((p) => { p.x = targetX - p.w / 2; });
+    const dx = currentCanvas.w / 2 - cx;
+    photos.forEach((p) => { p.x += dx; });
   } else if (axis === 'y') {
-    const targetY = currentCanvas.h / 2;
-    photos.forEach((p) => { p.y = targetY - p.h / 2; });
+    const dy = currentCanvas.h / 2 - cy;
+    photos.forEach((p) => { p.y += dy; });
   } else {
-    const cx = (b.minX + b.maxX) / 2;
-    const cy = (b.minY + b.maxY) / 2;
     const dx = currentCanvas.w / 2 - cx;
     const dy = currentCanvas.h / 2 - cy;
     photos.forEach(p => { p.x += dx; p.y += dy; });
   }
-  keepAllPhotosInCanvas(photos);
+  shiftSelectionIntoCanvas(photos);
 
   renderCanvas();
   saveState();
+}
+
+function isTextInputTarget(target) {
+  if (!target) return false;
+  if (target.isContentEditable) return true;
+  const tag = target.tagName ? String(target.tagName).toLowerCase() : '';
+  return tag === 'input' || tag === 'textarea' || tag === 'select';
+}
+
+function moveSelectedPhotosBy(deltaX, deltaY, opts) {
+  const preview = !!(opts && opts.preview);
+  const photos = getSelectionPhotos();
+  if (photos.length === 0) return false;
+
+  const b = getSelectionBounds(photos);
+  if (!b) return false;
+
+  let dx = deltaX;
+  let dy = deltaY;
+
+  if (dx < 0) dx = Math.max(dx, -b.minX);
+  else if (dx > 0) dx = Math.min(dx, currentCanvas.w - b.maxX);
+
+  if (dy < 0) dy = Math.max(dy, -b.minY);
+  else if (dy > 0) dy = Math.min(dy, currentCanvas.h - b.maxY);
+
+  if (Math.abs(dx) < 1e-9 && Math.abs(dy) < 1e-9) return false;
+
+  if (preview) return true;
+
+  photos.forEach((p) => {
+    p.x += dx;
+    p.y += dy;
+  });
+  return true;
 }
 
 function intersectsRect(photo, rect) {
@@ -275,6 +389,27 @@ document.addEventListener('keydown', (e) => {
 
   const activeIds = getActiveSelectionIds();
   if (activeIds.length === 0) return;
+  const nudgeByKey = {
+    ArrowUp: [0, -1],
+    ArrowDown: [0, 1],
+    ArrowLeft: [-1, 0],
+    ArrowRight: [1, 0]
+  };
+  const nudge = nudgeByKey[e.key];
+  if (nudge) {
+    if (isTextInputTarget(e.target)) return;
+    const step = getGridStep();
+    if (!Number.isFinite(step) || step <= 0) return;
+    e.preventDefault();
+    const dx = nudge[0] * step;
+    const dy = nudge[1] * step;
+    if (!moveSelectedPhotosBy(dx, dy, { preview: true })) return;
+    pushUndoState();
+    moveSelectedPhotosBy(dx, dy);
+    renderCanvas();
+    saveState();
+    return;
+  }
   if (e.key === 'r' || e.key === 'R') {
     pushUndoState();
     activeIds.forEach((id) => {

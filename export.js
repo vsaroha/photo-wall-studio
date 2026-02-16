@@ -460,3 +460,6 @@ if (photoEntries.length > 0) {
 } else {
   setLayoutFeedback('No layout generated yet.', 'info');
 }
+if (typeof initOnboardingBanner === 'function') {
+  initOnboardingBanner();
+}

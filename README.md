@@ -71,6 +71,12 @@ This repo now includes `vercel.json` with production headers and cache behavior 
    - generate/shuffle/undo
    - export PDF
 
+## Tests and commit hook
+
+- Run full validation: `./scripts/test.sh`
+- Install git hooks once per clone: `lefthook install`
+- Pre-commit hook: runs `./scripts/test.sh` on every commit
+
 ## Notes
 
 - Current architecture uses shared globals across scripts loaded in order from `index.html`.
