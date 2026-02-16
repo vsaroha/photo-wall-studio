@@ -211,14 +211,13 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .toolbar-group:last-child .btn-secondary:hover {
   background: rgba(56, 82, 116, 0.82);
 }
-.canvas-secondary {
+.toolbar-export {
   width: 100%;
-  display: grid;
-  grid-template-columns: minmax(360px, 2fr) minmax(260px, 1fr);
-  gap: 12px;
-  align-items: start;
+  border: 1px solid #4b6387;
+  border-radius: var(--radius-sm);
+  background: #172946;
+  padding: 8px 10px;
 }
-.canvas-secondary .section { margin: 0; }
 .export-section:focus-within {
   border-color: #5b7498;
   box-shadow: 0 0 0 1px rgba(138, 167, 207, 0.24);
@@ -261,15 +260,10 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   opacity: 1;
   transform: translateY(0);
 }
-.project-section {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.project-actions {
-  display: flex;
-  justify-content: flex-end;
-  padding-bottom: 2px;
+.canvas-toolbar .keyboard-hint {
+  text-align: left;
+  color: #b8c8df;
+  padding-top: 2px;
 }
 .canvas-stage {
   width: 100%;
@@ -518,9 +512,6 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     border-top: 1px solid rgba(238, 243, 255, 0.2);
     padding-top: 10px;
     margin-top: 0;
-  }
-  .canvas-secondary {
-    grid-template-columns: 1fr;
   }
   .empty-state { width: 100%; }
   .onboarding-banner {
