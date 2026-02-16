@@ -1,0 +1,102 @@
+# Photo Wall Studio - Full LLM Technical Context
+
+## Overview
+
+Photo Wall Studio is a static, client-only collage/photo wall planner implemented with global JavaScript files loaded in order by `index.html`.
+
+- Runtime: browser only
+- Build tooling: none
+- Dependency: `jsPDF` via CDN
+
+## Entry points
+
+- Main entry: `index.html`
+- Bootstrapping: `export.js` wires initialization and export actions
+
+## Script load order (hard dependency)
+
+Do not reorder without carefully refactoring globals:
+
+1. `state.js`
+2. `layout.js`
+3. `render.js`
+4. `interact.js`
+5. `export.js`
+
+Later files call globals declared by earlier files.
+
+## State model and invariants
+
+Primary arrays:
+
+- `photoEntries`: requested photo definitions (dimensions/qty/color metadata)
+- `placedPhotos`: concrete boxes currently on the canvas
+
+Critical invariant:
+
+- When a placed photo is removed, matching entry bookkeeping must remain correct.
+- Delete/undo flows must not leave orphaned or inconsistent records across `photoEntries` and `placedPhotos`.
+
+Selection and interaction state is global and shared across render/interact logic.
+
+## Persistence contract
+
+- Primary localStorage key: `photo-wall-studio`
+- Legacy keys read for migration compatibility:
+  - `photo-wall-planner`
+  - `collage-planner`
+
+Persistence must preserve:
+
+- unit settings
+- canvas settings
+- entry/placement state
+- export settings
+- undo-safe continuity
+
+## UX conventions
+
+- Photo size panel is input-driven (W/H/Qty), not a visible entry list workflow.
+- `+` creates boxes directly on canvas.
+- Per-box controls are rendered on canvas:
+  - rotate (`↻`)
+  - delete (`✕`)
+- Top control strip includes generation/arrangement/export/status controls.
+- Export settings are collapsible and default to collapsed.
+
+## Algorithm and rendering boundaries
+
+- `layout.js`: strategy math and auto-arrangement decisions.
+- `render.js`: draw cycle, overlap/out-of-bounds warnings, selection visuals.
+- `interact.js`: pointer/keyboard behavior for move/resize/rotate/delete, marquee selection.
+- `state.js`: source of truth and persistence orchestration.
+
+Keep responsibilities separated; avoid embedding layout strategy in render or persistence logic.
+
+## Common failure modes
+
+- Breaking script load order causes missing global functions at runtime.
+- Deleting selected/rotated items without syncing arrays introduces stale state.
+- Layout changes can regress overlap detection or bounds logic.
+- Export changes can drift from on-canvas coordinates/scaling.
+
+## Safe change workflow for agents
+
+1. Read `README.md`, `AGENTS.md`, and `agent-index.json`.
+2. Touch the smallest set of files required.
+3. Preserve script ordering and global function contracts.
+4. Run syntax validation:
+   - `node --check state.js`
+   - `node --check layout.js`
+   - `node --check render.js`
+   - `node --check interact.js`
+   - `node --check export.js`
+5. Sanity test in browser:
+   - add boxes with `+`
+   - delete (`✕` and `Delete` key)
+   - generate/shuffle/undo
+   - export PDF
+
+## Machine-readable companion
+
+See `agent-index.json` for a compact structured map.

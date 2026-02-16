@@ -15,6 +15,41 @@ It supports multiple layout strategies, direct canvas editing, grid snapping, ov
 1. Open `index.html` in a browser.
 2. Optional: use a local static server if you prefer (for example, `python3 -m http.server`).
 
+## AI Quickstart
+
+Use this section as a fast path for AI/code agents making changes.
+
+1. Key files and load order (must remain in this order):
+   - `state.js`
+   - `layout.js`
+   - `render.js`
+   - `interact.js`
+   - `export.js`
+2. Runtime state:
+   - `photoEntries` and `placedPhotos` are the core arrays.
+   - Keep them in sync when deleting or mutating boxes.
+3. Persistence:
+   - Primary key: `photo-wall-studio`
+   - Legacy keys auto-read: `photo-wall-planner`, `collage-planner`
+4. Validate syntax before commit:
+   - `node --check state.js`
+   - `node --check layout.js`
+   - `node --check render.js`
+   - `node --check interact.js`
+   - `node --check export.js`
+5. Browser sanity pass:
+   - add boxes with `+`
+   - delete from canvas (`✕` and keyboard `Delete`)
+   - generate/shuffle/undo
+   - export PDF
+
+### Definition of done (for agent changes)
+
+1. No script load-order regressions in `index.html`.
+2. `photoEntries` and `placedPhotos` stay consistent across add/delete/undo flows.
+3. All five `node --check` commands pass.
+4. Core browser flows still work: add, arrange, delete, undo, export.
+
 ## Deploy to Vercel (frontend only)
 
 1. Push this repo to GitHub/GitLab/Bitbucket.

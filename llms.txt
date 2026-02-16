@@ -1,0 +1,51 @@
+# Photo Wall Studio - LLM Guide
+
+This is a single-page browser app for planning photo walls/collages.
+
+## Project purpose
+
+- Plan and arrange photo boxes on a canvas.
+- Support manual editing plus auto-layout strategies.
+- Export final arrangement to PDF.
+
+## Run
+
+- Open `index.html` directly in a browser.
+- Optional local server: `python3 -m http.server`
+- No build step, no package manager, no framework.
+
+## Key files
+
+- `index.html`: app shell and script load order
+- `state.js`: state, persistence, undo, add flow
+- `layout.js`: layout algorithms and dispatcher
+- `render.js`: canvas drawing and visual diagnostics
+- `interact.js`: drag/resize/rotate/delete/select interactions
+- `export.js`: PDF export and app bootstrapping
+- `MAP.md`: architecture/function map
+- `AGENTS.md`: agent-specific constraints and validation checklist
+
+## Constraints
+
+- Keep script load order unchanged unless absolutely required:
+  1. `state.js`
+  2. `layout.js`
+  3. `render.js`
+  4. `interact.js`
+  5. `export.js`
+- Core runtime arrays are `photoEntries` and `placedPhotos`; maintain consistency between them.
+- Persisted state key is `photo-wall-studio` (legacy keys are migrated automatically).
+
+## Validation
+
+- `node --check state.js`
+- `node --check layout.js`
+- `node --check render.js`
+- `node --check interact.js`
+- `node --check export.js`
+- Optional full validation: `./scripts/test.sh`
+
+## Canonical references
+
+- Start with `README.md` for product-level behavior.
+- Use `AGENTS.md` and `agent-index.json` for agent-oriented constraints.

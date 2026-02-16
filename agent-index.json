@@ -1,0 +1,58 @@
+{
+  "project": {
+    "name": "Photo Wall Studio",
+    "type": "static-single-page-app",
+    "runtime": "browser",
+    "build_step": false
+  },
+  "entrypoint": "index.html",
+  "script_load_order": [
+    "state.js",
+    "layout.js",
+    "render.js",
+    "interact.js",
+    "export.js"
+  ],
+  "state_keys": {
+    "primary_arrays": [
+      "photoEntries",
+      "placedPhotos"
+    ],
+    "persistence": {
+      "local_storage_primary": "photo-wall-studio",
+      "local_storage_legacy": [
+        "photo-wall-planner",
+        "collage-planner"
+      ]
+    }
+  },
+  "critical_flows": [
+    "add_boxes_via_plus_from_W_H_Qty",
+    "delete_box_via_canvas_button_or_delete_key",
+    "generate_shuffle_undo",
+    "export_pdf"
+  ],
+  "constraints": [
+    "do_not_reorder_script_load_order_without_refactor",
+    "keep_photoEntries_and_placedPhotos_in_sync",
+    "export_settings_collapsible_default_collapsed",
+    "per_box_controls_include_rotate_and_delete"
+  ],
+  "validation_commands": [
+    "node --check state.js",
+    "node --check layout.js",
+    "node --check render.js",
+    "node --check interact.js",
+    "node --check export.js"
+  ],
+  "optional_validation_commands": [
+    "./scripts/test.sh"
+  ],
+  "docs": [
+    "README.md",
+    "AGENTS.md",
+    "MAP.md",
+    "llms.txt",
+    "llms-full.txt"
+  ]
+}
