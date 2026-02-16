@@ -130,29 +130,63 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   width: min(100%, 1200px);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 .canvas-toolbar {
   width: 100%;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 14px;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface2);
-  border: 1px solid #274e7d;
+  gap: 12px 14px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  background: linear-gradient(180deg, #1d3965 0%, #16335a 100%);
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius);
-  padding: 10px 12px;
+  padding: 12px 14px;
+  box-shadow: var(--shadow-card);
 }
 .toolbar-group {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  position: relative;
+  padding-top: 16px;
 }
 .toolbar-group + .toolbar-group {
-  border-left: 1px solid rgba(238, 238, 238, 0.2);
+  border-left: 1px solid rgba(238, 243, 255, 0.22);
   padding-left: 14px;
+}
+.toolbar-group::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #b3c8ec;
+  font-weight: 800;
+}
+.toolbar-group:first-child::before { content: 'Layout + Export'; }
+.toolbar-group:last-child::before { content: 'Alignment'; }
+.toolbar-group:first-child .btn-primary {
+  min-height: 34px;
+  padding-inline: 14px;
+  box-shadow: 0 8px 18px rgba(255, 64, 102, 0.28);
+}
+.toolbar-group:first-child button:nth-child(2),
+.toolbar-group:first-child button:nth-child(3) {
+  background: rgba(45, 108, 178, 0.18);
+  border-color: rgba(200, 220, 248, 0.26);
+  color: #d9e6fb;
+}
+.toolbar-group:first-child button:nth-child(4) {
+  background: rgba(17, 31, 54, 0.5);
+  border-color: rgba(200, 220, 248, 0.36);
+  color: #d9e6fb;
+}
+.toolbar-group:first-child button:nth-child(4):hover {
+  background: rgba(29, 57, 101, 0.8);
 }
 .canvas-secondary {
   width: 100%;
